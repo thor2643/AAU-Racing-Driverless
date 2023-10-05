@@ -11,12 +11,11 @@ class CameraConfig:
 
         # Set custom output file names if provided, or use defaults
         self.color_output_file = color_output_file or "color_video.avi"
-        #self.depth_output_file = depth_output_file or "depth_video.avi"
+        # self.depth_output_file = depth_output_file or "depth_video.avi"
 
         self.codec = cv2.VideoWriter_fourcc(*'XVID')
         self.color_out = cv2.VideoWriter(self.color_output_file, self.codec, self.frame_rate, (self.width, self.height))
-        #self.depth_out = cv2.VideoWriter(self.depth_output_file, self.codec, self.frame_rate, (self.width, self.height))
-
+        # self.depth_out = cv2.VideoWriter(self.depth_output_file, self.codec, self.frame_rate, (self.width, self.height))
 
     def configure_pipeline(self):
         pipeline = rs.pipeline()
@@ -76,7 +75,7 @@ def main():
             if depth_image.shape == color_image.shape:
                 images = np.hstack((color_image, depth_colormap))
             else:
-                #resize the color image to match the depth image
+                # Resize the color image to match the depth image
                 color_image = cv2.resize(color_image, dsize=(depth_image.shape[1], depth_image.shape[0]), interpolation=cv2.INTER_AREA)
                 images = np.hstack((color_image, depth_colormap))
 
