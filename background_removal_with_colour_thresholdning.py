@@ -6,7 +6,12 @@ img_1 = cv2.imread("Race track with cones.png")
 img_2 = cv2.imread("Race track with cones 2.png")
 #img_3 = cv2.imread("Race track with cones 2.png")
 
-kernel = np.array([[0,0,0],
+kernel1 = np.array([[0,0,0,0,0],
+                   [0,0,0,0,0],
+                   [0,0,0,0,0],
+                   [0,0,0,0,0],
+                   [0,0,0,0,0]], np.uint8)
+kernel2 = np.array([[0,0,0],
                    [0,0,0],
                    [0,0,0]], np.uint8)
 
@@ -76,24 +81,29 @@ def assemble_image(image1, image2):
 
     cv2.imshow('Result', result_img) 
 
-img1 = colour_threshold_HSV(img_1, "img1", [30,95,110], [165,255,255])
+img1 = colour_threshold_HSV(img_1, "img1", [80,95,110], [165,255,255])
+img2 = colour_threshold_HSV(img_1, "img2", [20,95,110], [80,255,255])
 
 ###
-gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+gray_img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+gray_img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
 # Set up a threshold mark
-ret, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+_, binary_img1 = cv2.threshold(gray_img1, 150, 255, cv2.THRESH_BINARY)
+inv_binary_img1 = 255-binary_img1
 
-img_dilation = cv2.dilate(binary, kernel, iterations=1)
+_, binary_img2 = cv2.threshold(gray_img2, 150, 255, cv2.THRESH_BINARY)
+inv_binary_img2 = 255-binary_img2
+
+#img_dilation = cv2.dilate(binary_img1, kernel1, iterations=1)
 #img_erosion = cv2.erode(img_dilation, kernel, iterations=1)
-img2 = colour_threshold_HSV(img_1, "img2", [20,95,110], [80,255,255])
 
 ###
 
 #cv2.imshow("Original image",img1)
 #cv2.imshow("Dilated image",img_dilation)
-cv2.imwrite("Image 1.png",img1)
-cv2.imwrite("Image 2.png",img2)
+cv2.imwrite("Image 1.png", inv_binary_img1)
+cv2.imwrite("Image 2.png", inv_binary_img2)
 #assemble_image(img1, img2)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
