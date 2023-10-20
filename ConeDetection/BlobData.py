@@ -5,7 +5,7 @@ import pickle
 
 from ConeDetector import ConeDetector
 
-Detector=ConeDetector()
+Detector = ConeDetector()
 
 # if you want it to process the image for blue cones, set Blue to True, else set it to False
 def process_image(input_path, Blue, name):
@@ -49,20 +49,13 @@ def process_folder(input_folder, output_folder):
             
 #runs throgh the pictures in the desired folder, and gets BLOB features for each picture and stores them in array.
 def get_BLOBS_and_cone_array(folder,filename):
-    detected_BLOBS=[]
     n=0
-    #for filename in os.listdir(folder):
-    for i in range(3):
+    for filename in os.listdir(folder):
         img=cv2.imread(os.path.join(folder, filename), cv2.IMREAD_UNCHANGED)
-        #cv2.imshow(f"{filename}", img)
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
         contours, cont_props=Detector.get_blobs_and_features(img, method = cv2.CHAIN_APPROX_SIMPLE)
-        for i in range(len(contours)): 
-            for j in range(len(cont_props[i])):
-                detected_BLOBS.append(contours[i]), cont_props[j]
+
         
-    return img, detected_BLOBS, contours, cont_props
+    return img, contours, cont_props
 
 def sort_blobs_area(cont_props, min_area):
     sorted_cont_props=[]
@@ -75,11 +68,11 @@ def sort_blobs_area(cont_props, min_area):
     return sorted_cont_props
 
 #shows image and asks if it is a cone or not and returns True or False
-def cone_or_not(img,img_RGB):
+def cone_or_not(img,img_BGR):
     # Resize the image to make it larger
-    img_RGB = cv2.resize(img_RGB, (0,0), fx=4, fy=4)
+    img_BGR = cv2.resize(img_BGR, (0,0), fx=4, fy=4)
     cv2.imshow("img", img)
-    cv2.imshow("img_RGB", img_RGB)
+    cv2.imshow("img_RGB", img_BGR)
     key = cv2.waitKey(0)
     cv2.destroyAllWindows()
     if key == ord('y'):
@@ -98,8 +91,9 @@ process_folder(input_path, output_path)
 folder=output_path
 filenames_in_input_folder = os.listdir(input_path)
 file_num=0
+
 for filename in os.listdir(folder):
-    img, detected_BLOBS, contours, cont_props= get_BLOBS_and_cone_array(folder, filename)
+    img, contours, cont_props = get_BLOBS_and_cone_array(folder, filename)
     i=1
     sorted_cont_props=sort_blobs_area(cont_props,min_area=50)
     for cont in sorted_cont_props:
@@ -114,15 +108,17 @@ for filename in os.listdir(folder):
         img_RGB=cv2.imread(os.path.join(input_path, filenames_in_input_folder[file_num]), cv2.IMREAD_UNCHANGED)
         cropped_img_RGB = img_RGB[y1:y1+h, x1:x1+w]
             
-        is_cone=cone_or_not(cropped_img_BLOB,cropped_img_RGB)
+        is_cone = cone_or_not(cropped_img_BLOB,cropped_img_RGB)
         sorted_cont_props[i] = [[sorted_cont_props[i]], [is_cone]]
         i+=1
+
     data = [[data],[sorted_cont_props]]
     
     file_num+=1
     if file_num == len(os.listdir(input_path)):
         file_num=0
         
+          
 # Save the array to a file
 with open('my_array.pkl', 'wb') as file:
     pickle.dump(data, file)
