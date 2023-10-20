@@ -148,10 +148,3 @@ class ConeDetector:
         #show image
         #cv2.imshow(name, final)
         return final, mask
-
-        
-
-        
-        
-        
-
