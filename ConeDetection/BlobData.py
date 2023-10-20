@@ -50,11 +50,11 @@ def process_folder(input_folder, output_folder):
 #runs throgh the pictures in the desired folder, and gets BLOB features for each picture and stores them in array.
 def get_BLOBS_and_cone_array(folder,filename):
     n=0
-    for filename in os.listdir(folder):
-        img=cv2.imread(os.path.join(folder, filename), cv2.IMREAD_UNCHANGED)
-        contours, cont_props=Detector.get_blobs_and_features(img, method = cv2.CHAIN_APPROX_SIMPLE)
-
-        
+    
+    #der var: for filename in os.listdir(folder):
+    img=cv2.imread(os.path.join(folder, filename), cv2.IMREAD_UNCHANGED)
+    contours, cont_props = Detector.get_blobs_and_features(img, method = cv2.CHAIN_APPROX_SIMPLE)
+         
     return img, contours, cont_props
 
 def sort_blobs_area(cont_props, min_area):
@@ -83,19 +83,22 @@ def cone_or_not(img,img_BGR):
         print("Invalid input please try again. y=cone, n=not cone")
         return cone_or_not(img, img_RGB)
         
-       
+     
 input_path = "Thor_data"
 output_path = "ConeDetection\BinaryImages_img"
 data=np.array([]) 
 process_folder(input_path, output_path)
 folder=output_path
+#makes a list of the filenames in the input folder so we can iterate through them
 filenames_in_input_folder = os.listdir(input_path)
 file_num=0
-
+#goes through each image in folder and gets features for each blob in the image,
+# and asks if it is a cone or not.
 for filename in os.listdir(folder):
-    img, contours, cont_props = get_BLOBS_and_cone_array(folder, filename)
-    i=1
+    img, contours, cont_props= get_BLOBS_and_cone_array(folder, filename)
+    i=0  
     sorted_cont_props=sort_blobs_area(cont_props,min_area=50)
+    #crops out the images so we can classify them
     for cont in sorted_cont_props:
         w = cont[6]
         h = cont[7] 
@@ -104,21 +107,25 @@ for filename in os.listdir(folder):
 
         cropped_img_BLOB = img[y1:y1+h, x1:x1+w]
         
-        #OBS den skal kun have fat i det billede som passer til det nuværende..
+        #gets the RGB image from input folder
         img_RGB=cv2.imread(os.path.join(input_path, filenames_in_input_folder[file_num]), cv2.IMREAD_UNCHANGED)
         cropped_img_RGB = img_RGB[y1:y1+h, x1:x1+w]
             
         is_cone = cone_or_not(cropped_img_BLOB,cropped_img_RGB)
         sorted_cont_props[i] = [[sorted_cont_props[i]], [is_cone]]
         i+=1
-
-    data = [[data],[sorted_cont_props]]
     
+    #saves the data in data array for each image
+    data = [[data], [sorted_cont_props]]
+    
+    #we now look at the next image in the folder therefore we add 1 to file_num
     file_num+=1
+    #to take account for the difference in number of images in the input folder and the output folder
+    #10 RGB vs 20 binarynnnnnnn
     if file_num == len(os.listdir(input_path)):
         file_num=0
+    print("new img")
         
-          
 # Save the array to a file
 with open('my_array.pkl', 'wb') as file:
     pickle.dump(data, file)
