@@ -10,9 +10,14 @@ from sklearn.metrics import (
     ConfusionMatrixDisplay,
     f1_score,
 )
+import pickle
 
 from mpl_toolkits.mplot3d import Axes3D
 
+
+#with open('my_array.pkl', 'rb') as file:
+ #   data = pickle.load(file)
+    #print(data)
 
 
 data = [[[5, 184.0, 175.8, False, 1.5, 0.479, 24, 16, 336.5, 304, 376, 328, 392, 0.5468053491827637], [False]], 
@@ -45,10 +50,11 @@ data = [[[5, 184.0, 175.8, False, 1.5, 0.479, 24, 16, 336.5, 304, 376, 328, 392,
          [[287, 94.5, 212.5, False, 5.5, 0.268, 44, 8, 283.0, 251, 104, 295, 112, 0.3339222614840989], [False]], 
          [[296, 23.5, 26.4, False, 1.429, 0.336, 10, 7, 31.5, 252, 105, 262, 112, 0.746031746031746], [True]]]
 
+
 features = [feature[0] for feature in data]
 y = [feature[1][0] for feature in data]
 
-
+#y = np.ravel(y)
 StdScaler = StandardScaler()
 Pca = PCA(n_components=3)
 
@@ -70,8 +76,8 @@ predicted = model.predict(X_test)
 accuracy = accuracy_score(predicted, y_test)
 f1 = f1_score(predicted, y_test, average="weighted")
 
-print(accuracy)
-print(f1)
+print(f"Accuracy: {accuracy}")
+print(f"F1 score: {f1}")
 
 
 

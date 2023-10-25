@@ -108,6 +108,8 @@ def enhance_contrast(image):
 
     return result
 
+
+
 def remove_image_frame(image):
     dist_to_horizontal_edge = 0
     dist_to_vertical_edge = 0
@@ -130,6 +132,8 @@ def remove_image_frame(image):
     sliced_image = image[dist_to_horizontal_edge:image.shape[0]-dist_to_horizontal_edge, dist_to_vertical_edge:image.shape[1]-dist_to_vertical_edge]
     
     return sliced_image
+
+
 
 def laplacian_edge_detection(image):
     grayscaled_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

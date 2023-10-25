@@ -6,6 +6,29 @@ class ConeDetector:
     def __init__(self) -> None:
         pass
 
+    def remove_image_frame(self, image):
+        dist_to_horizontal_edge = 0
+        dist_to_vertical_edge = 0
+        height, width = image.shape[:2]
+
+        x = int(width / 2)    
+        for y in range(image.shape[0]):
+            if not image[y, x].all():
+                dist_to_horizontal_edge += 1
+            else:
+                break
+
+        y = int(height / 2)
+        for x in range(image.shape[1]):
+            if not image[y, x].all():
+                dist_to_vertical_edge += 1
+            else:
+                break
+        
+        sliced_image = image[dist_to_horizontal_edge:image.shape[0]-dist_to_horizontal_edge, dist_to_vertical_edge:image.shape[1]-dist_to_vertical_edge]
+        
+        return sliced_image
+
 
     def get_blobs_and_features(self, img, method = cv2.CHAIN_APPROX_SIMPLE):
         contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, method)
@@ -54,6 +77,8 @@ class ConeDetector:
 
             except ZeroDivisionError:
                 CoM_ratio = 0
+                cX = 0
+                cY = 0
 
 
             conditions = [features[1] > thresholds["min_area"], 
@@ -66,20 +91,20 @@ class ConeDetector:
                             CoM_ratio < thresholds["mass_center_height_ratio"]]
 
 
-            if 0 not in conditions:
-                approx = cv2.approxPolyDP(blob, 3, True) #0.015*features[2]
-                bbox = cv2.boundingRect(approx)
+            #if 0 not in conditions:
+            approx = cv2.approxPolyDP(blob, 3, True) #0.015*features[2]
+            bbox = cv2.boundingRect(approx)
 
                 #Increas height of detected cones, as the detecion only sees the bottom
-                cone_height_scale = 1.2
+                #cone_height_scale = 1.2
 
                 #Increase height of bounding box to not only contain the bottom part, but also the top part
-                bbox = list(bbox)
-                bbox[1] = int(bbox[1]-bbox[3]*1.2)
-                bbox[3] = int(bbox[3]+bbox[3]*1.2)
+                #bbox = list(bbox)
+                #bbox[1] = int(bbox[1]-bbox[3]*1.2)
+                #bbox[3] = int(bbox[3]+bbox[3]*1.2)
 
                 
-                blobs_bbox_CoM.append([features, bbox, [cX, cY]])
+            blobs_bbox_CoM.append([features, bbox, [cX, cY]])
         
         return blobs_bbox_CoM
     
@@ -149,3 +174,34 @@ class ConeDetector:
         #show image
         #cv2.imshow(name, final)
         return final, mask
+    
+    def find_blue_cones(self, image):
+        # Find all blue parts of the cone using HSV colour thresholding
+        img_blue, _ = self.colour_threshold_HSV(image, "img1", [80,95,110], [165,255,255])
+        
+        # Find all the white lines on the cones by inverting the image to easily detect white colours with HSV colour thresholding
+        inv_image = 255-image
+        img_white_lines, _ = self.colour_threshold_HSV(inv_image, "img2", [0,0,0], [255,255,55])
+
+        # Convert the images to greyscale to convert them to binary images
+        gray_img_blue = cv2.cvtColor(img_blue, cv2.COLOR_BGR2GRAY)
+        gray_img_white_lines = cv2.cvtColor(img_white_lines, cv2.COLOR_BGR2GRAY)
+
+        # Convert the greyscaled images to binary images. 
+        _, binary_img_blue = cv2.threshold(gray_img_blue, 210, 255, cv2.THRESH_BINARY)
+        _, binary_img_white_lines = cv2.threshold(gray_img_white_lines, 140, 255, cv2.THRESH_BINARY)
+
+        # The bitwise_and operator helps us combine the to images so that the white colours (now black blobs) that were previously missing from the blue cones (also black blobs) 
+        # are combined with each other resulting in an image consisting of whole cones
+        result = cv2.bitwise_and(binary_img_blue, binary_img_white_lines)
+        result_image = 255-result
+
+        # Create a kernel to apply opening (dilation) and closing (erosion) to the image, which will help connecting the black and white cone parts completely, 
+        # as there are still a few pixels that need to be connected
+        kernel = np.ones((3,3), np.uint8)
+        opening_image = cv2.dilate(result_image, kernel, iterations= 1)
+        closing_image = cv2.erode(opening_image, kernel, iterations= 1)
+
+        #cv2.imshow("WIN?", closing_image)
+        # Return the image
+        return closing_image
