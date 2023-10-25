@@ -4,8 +4,8 @@ from ConeDetector import ConeDetector
 
 Detector = ConeDetector()
 
-img = cv2.imread("Thor_data\\Image_2.jpg", cv2.IMREAD_GRAYSCALE)
-img1 = cv2.imread("Thor_data\\Image_2.jpg")
+img = cv2.imread("Thor_data\\Image_1.jpg", cv2.IMREAD_GRAYSCALE)
+img1 = cv2.imread("Thor_data\\Image_1.jpg")
 
 #img_blue = colour_threshold_HSV(img_1, "img1", [80,95,110], [165,255,255])
 img_yellow, img_binary_yellow = Detector.colour_threshold_HSV(img1, "img2", [20,95,110], [35,255,255])
