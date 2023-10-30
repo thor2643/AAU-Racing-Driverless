@@ -111,8 +111,6 @@ def enhance_contrast(image):
 
     return result
 
-
-
 def remove_image_frame(image):
     dist_to_horizontal_edge = 0
     dist_to_vertical_edge = 0
@@ -255,68 +253,122 @@ def find_yellow_cones(image):
     #cv2.imshow("Yellow Cones", binary_img_yellow)
     cv2.imshow("Black Cones", img_black_lines)
 
-def find_yellow_cones_with_Hough(image):
-    enhance_img = enhance_contrast(image)
-    # 1. Load the image (assuming you already have the isolated yellow cones)
-    img_yellow = colour_threshold(enhance_img, "HSV", [20,95,110], [35,255,255])
-    min_area = 100
-    # 2. Convert to grayscale
-    gray = cv2.cvtColor(img_yellow, cv2.COLOR_BGR2GRAY)
-
-    # 3. Apply edge detection
-    edges_1 = cv2.Canny(gray, 0, 250)  # You can adjust the thresholds as needed
-
-    # 4. Post-processing (erosion and dilation)
-    kernel = np.ones((3, 3), np.uint8)
-    edges_2 = cv2.dilate(edges_1, kernel, iterations=1)
-    edges_3 = cv2.erode(edges_2, kernel, iterations=1)
-
-    # 5. Contour Detection
-    contours, _ = cv2.findContours(edges_3, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # 6. Iterate through detected contours
-    for contour in contours:
-        # You can add additional filtering based on contour area, aspect ratio, etc.
-        if cv2.contourArea(contour) > min_area:  # Adjust min_area as needed
-            # Get the bounding box of the contour
-            x, y, w, h = cv2.boundingRect(contour)
-            cv2.rectangle(img_yellow, (x, y), (x + w, y + h), (0, 0, 255), 2)
-
-    # 7. Line Detection using Hough Line Transform
-    lines = cv2.HoughLines(edges_3, 1, np.pi / 180, threshold=200)
-
-    if lines is not None:
-        for line in lines:
-            rho, theta = line[0]
-            a = np.cos(theta)
-            b = np.sin(theta)
-            x0 = a * rho
-            y0 = b * rho
-            x1 = int(x0 + 1000 * (-b))
-            y1 = int(y0 + 1000 * (a))
-            x2 = int(x0 - 1000 * (-b))
-            y2 = int(y0 - 1000 * (a))
-            cv2.line(img_yellow, (x1, y1), (x2, y2), (0, 0, 255), 2)  # Draw the detected lines
-
-    cv2.imshow('Dark Lines', img_yellow)
-    cv2.imshow('Edges', edges_3)
-
-def find_dark_lines_in_yellow_cones(image):
+def find_yellow_cones_with_laplacian(image):
     # 1. Load the image
-    enhance_img = enhance_contrast(image)
+    enhance_img = image #enhance_contrast(image)
     img_yellow = colour_threshold(enhance_img, "HSV", [20, 95, 110], [35, 255, 255])
+    img_cone = colour_threshold(enhance_img, "BGR", [26, 32, 42], [100, 255, 255])
+    img_orange_cones = colour_threshold(enhance_img, "BGR", [0, 0, 81], [163, 188, 255])
+    # 2. Convert to grayscale
+    gray_img_cone = cv2.cvtColor(img_cone, cv2.COLOR_BGR2GRAY)
+    gray_img_orange_cones = cv2.cvtColor(img_orange_cones, cv2.COLOR_BGR2GRAY)
 
-    # 2. Convert to grayscale and ensure the correct data type (usually CV_8U)
-    gray = cv2.cvtColor(img_yellow, cv2.COLOR_BGR2GRAY)
+    _, binary_img_cone = cv2.threshold(gray_img_cone, 245, 255, cv2.THRESH_BINARY)
+    _, binary_img_orange_cones = cv2.threshold(gray_img_orange_cones, 165, 255, cv2.THRESH_BINARY)
+
+    # 3. Apply Laplacian to the img_yellow
+    laplacian = cv2.Laplacian(img_yellow, cv2.CV_64F)
+    laplacian_2 = cv2.convertScaleAbs(laplacian) 
+    #print(laplacian_2.shape)
+    # Resize Laplacian to match the dimensions of binary_img_cone
+    gray_img_laplacian = cv2.cvtColor(img_cone, cv2.COLOR_BGR2GRAY)
+
+    # Apply threshold to Laplacian result
+    _, binary_img_laplacian = cv2.threshold(gray_img_laplacian, 100, 255, cv2.THRESH_BINARY)    
+
+    # Perform bitwise OR operation with the binary cone mask
+    summed_img = cv2.bitwise_and(binary_img_cone, binary_img_laplacian)
+    kernel = np.ones((3,3), np.uint8)
+    opening_image = cv2.erode(summed_img, kernel, iterations= 1)
+    closing_image = cv2.dilate(opening_image, kernel, iterations= 1)
+    inv_closing_img = 255 - closing_image
+    removed_blobs_image = remove_blobs(inv_closing_img)
+    final_img = remove_background_noise(removed_blobs_image)
     
-    edges = cv2.Canny(gray, 0, 250)  # Adjust thresholds as needed
+    cv2.imshow('Orange Cones', img_orange_cones)
+    cv2.imshow('Binary Orange Cones', binary_img_orange_cones)
+    cv2.imshow('Background removal', final_img)
 
-    # Convert the result to the appropriate data type
-    #laplacian = np.uint8(np.absolute(laplacian))
+def remove_blobs(image):
+    binary_mask = image
 
-    cv2.imshow('Yellow Cones', edges)
-    #cv2.imshow('Dark Lines', edges)
+    # Find blobs and filter based on area
+    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    min_blob_area = 500  
 
-find_dark_lines_in_yellow_cones(resized_image_2)
+    clean_mask = np.zeros_like(binary_mask)
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area < min_blob_area:
+            cv2.drawContours(clean_mask, [contour], -1, 255, thickness=cv2.FILLED)
+
+    return clean_mask
+    #cv2.imshow("Large background blobs removed", clean_mask)
+
+def remove_background_noise(image):
+    # Convert the image to grayscale
+    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = image
+
+    # Apply line detection (Hough Line Transform)
+    lines = cv2.HoughLinesP(gray, 1, np.pi / 180, threshold=60, minLineLength=2, maxLineGap=30)
+
+    if lines is not None:  # Check if lines were detected
+        # Create a binary mask to remove the detected lines (stand)
+        mask = np.ones_like(gray, dtype=np.uint8) * 255
+
+        # Filter and remove the detected lines
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(mask, (x1, y1), (x2, y2), 0, thickness=2)  # Use 255 to draw lines
+
+        # Apply the mask to remove the stand
+        result = cv2.bitwise_and(image, image, mask=mask)
+
+        return result
+    else:
+        return image  # No lines detected, return the original image
+
+
+def remove_all_but_concrete(image, lower_yuv: list, upper_yuv: list):
+    lower_yuv = np.array(lower_yuv, dtype=np.uint8)  # Convert to NumPy array
+    upper_yuv = np.array(upper_yuv, dtype=np.uint8)  # Convert to NumPy array
+
+    # 1. Convert the image to YUV color space
+    yuv_image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
+
+    # 2. Apply YUV thresholding to find concrete areas
+    yuv_mask = cv2.inRange(yuv_image, lower_yuv, upper_yuv)
+
+    # 3. Find contours in the binary mask
+    contours, _ = cv2.findContours(yuv_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # 4. Initialize variables to keep track of the largest blob and its bounding box
+    largest_blob = None
+    largest_area = 0
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area > largest_area:
+            largest_area = area
+            largest_blob = contour
+
+    if largest_blob is not None:
+        # 5. Get the bounding box of the largest blob
+        x, y, w, h = cv2.boundingRect(largest_blob)
+
+        # 6. Crop the original image using the bounding box
+        concrete_area = image[y:y+h, x:x+w]
+
+        return concrete_area
+
+    # 7. If no concrete is found, return None
+    return None
+
+concrete = remove_all_but_concrete(resized_image_4, [103, 120, 125], [198, 133, 140])
+#cv2.imshow("Concrete", concrete)
+
+find_yellow_cones_with_laplacian(concrete)
 cv2.waitKey()
 cv2.destroyAllWindows()
