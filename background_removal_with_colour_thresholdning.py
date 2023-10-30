@@ -134,19 +134,6 @@ def remove_image_frame(image):
     
     return sliced_image
 
-
-
-def laplacian_edge_detection(image):
-    grayscaled_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Apply Laplacian filter to the grayscale image
-    laplacian = cv2.Laplacian(grayscaled_image, cv2.CV_64F)
-
-    return laplacian
-
-    # Show the result
-    #cv2.imshow('laplacian_image.png', laplacian)
-
 def mean_image(image):
     # Define a kernel for local averaging
     kernel = np.ones((5, 5), np.float32) / 25  # A simple 5x5 averaging kernel
@@ -158,34 +145,6 @@ def mean_image(image):
     # Save or display the result
     #cv2.imshow('bright_image', brighter_image)
     return brighter_image
-
-"""
-img_blue = colour_threshold_HSV(resized_image_1, "img1", [80,95,110], [165,255,255])
-img_yellow = colour_threshold_HSV(resized_image_1, "img2", [20,95,110], [35,255,255])
-
-# Creating grayscale images
-gray_img_blue = cv2.cvtColor(img_blue, cv2.COLOR_BGR2GRAY)
-gray_img_yellow = cv2.cvtColor(img_yellow, cv2.COLOR_BGR2GRAY)
-
-# Set up a threshold mark for making binary images
-_, binary_img_blue = cv2.threshold(gray_img_blue, 150, 255, cv2.THRESH_BINARY)
-inv_binary_img_blue = 255-binary_img_blue
-
-_, binary_img_yellow = cv2.threshold(gray_img_yellow, 240, 255, cv2.THRESH_BINARY)
-inv_binary_img_yellow = 255-binary_img_yellow
-
-
-cv2.imshow("Blue Cones", binary_img_blue)
-cv2.imshow("Yellow Cones", binary_img_yellow)
-cv2.waitKey()
-cv2.destroyAllWindows()
-"""
-#img_yellow = colour_threshold_HSV(enhanced_image, "img2", [20,95,110], [35,255,255])
-#cv2.imshow("Blue Cones", img_blue)
-#cv2.imshow("White Cones", inv_enhanced_image)
-##cv2.imshow("Sad Cones", inv_enhanced_image)
-#cv2.imshow("White Cones", inv_enhanced_image_2)
-##cv2.imshow("White Cones", enhanced_image_3)
 
 def find_blue_cones(image):
     # Find all blue parts of the cone using HSV colour thresholding
@@ -285,9 +244,11 @@ def find_yellow_cones_with_laplacian(image):
     removed_blobs_image = remove_blobs(inv_closing_img)
     final_img = remove_background_noise(removed_blobs_image)
     
-    cv2.imshow('Orange Cones', img_orange_cones)
+    #cv2.imshow('Orange Cones', img_orange_cones)
     cv2.imshow('Binary Orange Cones', binary_img_orange_cones)
     cv2.imshow('Background removal', final_img)
+
+
 
 def remove_blobs(image):
     binary_mask = image
@@ -370,5 +331,6 @@ concrete = remove_all_but_concrete(resized_image_4, [103, 120, 125], [198, 133, 
 #cv2.imshow("Concrete", concrete)
 
 find_yellow_cones_with_laplacian(concrete)
+
 cv2.waitKey()
 cv2.destroyAllWindows()
