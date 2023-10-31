@@ -112,20 +112,23 @@ def mean_subtraction(x):
     global processed_img, temp_img
 
     # convert it to grayscale
-    img_yuv = cv2.cvtColor(processed_img,cv2.COLOR_BGR2HSV)
+    img_HSV = cv2.cvtColor(processed_img,cv2.COLOR_BGR2HSV)
+    #img_gray = cv2.cvtColor(processed_img,cv2.COLOR_BGR2GRAY)
 
     #Gaussian filter
     mean_filter = 1/16 * np.array([[1,2,1],
                                     [2,4,2],
                                     [1,2,1]])
 
-        
-    img_avg = cv2.filter2D(img_yuv[:,:,0],-1, mean_filter)
+    
+    filtersize = 513
+    gaussianImg = cv2.GaussianBlur(img_HSV[:,:,2], (filtersize, filtersize), 128)
+    #img_avg = cv2.filter2D(img_yuv[:,:,0],-1, mean_filter)
 
-    img_yuv[:,:,0] =cv2.subtract(img_yuv[:,:,0], img_avg)
+    img_HSV[:,:,2] = (img_HSV[:,:,2] - gaussianImg) #=cv2.subtract(img_gray, gaussianImg) #img_avg)
 
     #convert back
-    temp_img = cv2.cvtColor(img_yuv, cv2.COLOR_HSV2BGR)
+    temp_img = cv2.cvtColor(img_HSV, cv2.COLOR_HSV2BGR)
 
     
 
@@ -175,6 +178,7 @@ cv2.resizeWindow("Image Operations", 300, 200)
 cv2.createTrackbar("Histogram eql", "Preprocessing Operations", 0, 1, equalise_histogram)
 cv2.createTrackbar("Subtract mean", "Preprocessing Operations", 0, 1, mean_subtraction)
 
+
 cv2.createTrackbar("Apply", "Preprocessing Operations", 0, 1, apply_operation)
 
 
@@ -189,7 +193,7 @@ trackbars = [[["HSV-color thresholds"], ["LH", "LS", "LV", "UH", "US", "UV", "Ap
 #______________________________________#__________________________________________#
 
 
-img_path = 'Images\FrameRemoved\Image_6.jpg'
+img_path = 'Images\FrameRemoved\Image_8.png'
 output_path = "Images\\Other"
 name_of_img = "test"
 
