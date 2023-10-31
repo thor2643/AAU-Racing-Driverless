@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+import os
+import matplotlib.pyplot as plt
 
 def nothing(x): #dummy fuction
     pass
@@ -107,13 +109,24 @@ def equalise_histogram(x):
 
     #convert back
     temp_img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+    
+def signe_historgram_stretching(img):
+    # Apply histogram stretching
+    min_intensity = np.min(img)
+    max_intensity = np.max(img)
+
+    # Linearly scale the pixel values to cover the full range [0, 255]
+    stretched_image = cv2.convertScaleAbs(img, alpha=255 / (max_intensity - min_intensity), beta=-255 * min_intensity / (max_intensity - min_intensity))
+    return stretched_image
+
+
 
 def mean_subtraction(x):
     global processed_img, temp_img
 
     # convert it to grayscale
-    img_HSV = cv2.cvtColor(processed_img,cv2.COLOR_BGR2HSV)
-    #img_gray = cv2.cvtColor(processed_img,cv2.COLOR_BGR2GRAY)
+    img_yuv = cv2.cvtColor(processed_img,cv2.COLOR_BGR2YUV)
+    #img_yuv = cv2.cvtColor(processed_img,cv2.COLOR_BGR2HSV)
 
     #Gaussian filter
     mean_filter = 1/16 * np.array([[1,2,1],
@@ -127,8 +140,93 @@ def mean_subtraction(x):
 
     img_HSV[:,:,2] = (img_HSV[:,:,2] - gaussianImg) #=cv2.subtract(img_gray, gaussianImg) #img_avg)
 
+
+    temp_img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+    
+    #just experimenting wit histogram equalisation vs stretching
+        # convert it to grayscale
+    img_yuv = cv2.cvtColor(temp_img,cv2.COLOR_BGR2YUV)
+
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    img_yuv[:,:,0] = clahe.apply(img_yuv[:,:,0])
+
+
+    temp_img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+    
+    #just experimenting wit histogram equalisation vs stretching
+        # convert it to grayscale
+    img_yuv = cv2.cvtColor(temp_img,cv2.COLOR_BGR2YUV)
+
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    img_yuv[:,:,0] = clahe.apply(img_yuv[:,:,0])
+
     #convert back
-    temp_img = cv2.cvtColor(img_HSV, cv2.COLOR_HSV2BGR)
+    processed_img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+    
+                                #signe_historgram_stretching(temp_img)
+    
+    
+
+    
+#calculate the mean value all of the images in folder:
+def calculate_mean(RGB):        
+    mean1 = 0
+    mean_R = 0
+    mean_G = 0
+    mean_B = 0
+    total_mean = [ 0, 0, 0 ]   #"B", "G", "R"
+    numb_images = 0
+    folder = "Images\FrameRemoved"
+    
+    for filename in os.listdir(folder):
+        if filename.endswith(".jpg" or ".png"):
+            image = cv2.imread(os.path.join(folder, filename))
+            if RGB==True:
+                B, G, R = cv2.split(image)
+    
+                # Sum the channel values
+                mean_R += np.mean(R)
+                mean_G += np.mean(G)
+                mean_B += np.mean(B)
+                numb_images += 1   
+            else:
+                mean = np.mean(image)
+                mean1 += mean
+                numb_images += 1  
+    
+    if RGB==True:
+        mean_RGB=[mean_B, mean_G, mean_R]
+        for i in range(0, 3):
+            total_mean[i] = mean_RGB[i]/numb_images
+    else: 
+        total_mean = mean1/numb_images
+    return total_mean   
+    
+def mean1_substraction(x):
+    global processed_img, temp_img
+    
+    print (f" temp shape: {temp_img.shape}")
+    if len(temp_img.shape) == 3:
+        RGB = True
+    else:
+        RGB = False
+    
+    mean_RGB = calculate_mean(RGB)
+    
+    if RGB == True:
+        # Process each pixel value
+        for y in range(temp_img.shape[0]):
+            for x in range(temp_img.shape[1]):
+                # Get the RGB values for the current pixel
+                pixel = temp_img[y, x]
+
+                # Subtract the mean values from each channel
+                pixel[0] -= mean_RGB[2] #B
+                pixel[1] -= mean_RGB[1] #G
+                pixel[2] -= mean_RGB[0] #R
+                temp_img[y, x] = pixel
+    else:
+        temp_img = cv2.subtract(temp_img, mean_RGB)
 
     
 
@@ -177,7 +275,7 @@ cv2.namedWindow('Preprocessing Operations')
 cv2.resizeWindow("Image Operations", 300, 200) 
 cv2.createTrackbar("Histogram eql", "Preprocessing Operations", 0, 1, equalise_histogram)
 cv2.createTrackbar("Subtract mean", "Preprocessing Operations", 0, 1, mean_subtraction)
-
+cv2.createTrackbar("Mean substaction", "Preprocessing Operations", 0, 1, mean1_substraction)
 
 cv2.createTrackbar("Apply", "Preprocessing Operations", 0, 1, apply_operation)
 
@@ -193,7 +291,7 @@ trackbars = [[["HSV-color thresholds"], ["LH", "LS", "LV", "UH", "US", "UV", "Ap
 #______________________________________#__________________________________________#
 
 
-img_path = 'Images\FrameRemoved\Image_8.png'
+img_path = "Images\FrameRemoved\Image_1.jpg" #'Images\FrameRemoved\Image_6.jpg'
 output_path = "Images\\Other"
 name_of_img = "test"
 
