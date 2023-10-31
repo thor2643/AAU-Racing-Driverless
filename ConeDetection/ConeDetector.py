@@ -142,46 +142,45 @@ class ConeDetector:
 
         return img
     
-
-    def colour_threshold_HSV(self, image, name: str, lower_val: list, upper_val: list):
-        # convert to HSV
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV) 
+    def colour_threshold(self, img_BGR, lower_val: list, upper_val: list, colourspace="HSV"):
+        if colourspace == "HSV":
+            colour_img = cv2.cvtColor(img_BGR, cv2.COLOR_BGR2HSV) 
+        elif colourspace == "BGR":
+            colour_img = img_BGR
+        elif colourspace == "YUV":
+            colour_img = cv2.cvtColor(img_BGR, cv2.COLOR_BGR2YUV)
 
         # set lower and upper colour limits
         temp_lower_val = np.array(lower_val)
         temp_upper_val = np.array(upper_val)
 
-        # Threshold the HSV image to get only green colours
-        mask = cv2.inRange(hsv, temp_lower_val, temp_upper_val)
+        # Threshold the image to get a desired colour range
+        mask = cv2.inRange(colour_img, temp_lower_val, temp_upper_val)
 
-        # apply mask to original image - this shows the green with black blackground
-        only_green = cv2.bitwise_and(image, image, mask = mask)
+        # apply mask to original image. This shows the desired colour range with a black blackground
+        desired_colours = cv2.bitwise_and(img_BGR, img_BGR, mask = mask)
 
-        # create a black image with the dimensions of the input image
-        background = np.zeros(image.shape, image.dtype)
-        # invert to create a white image
-        background = cv2.bitwise_not(background)
-        # invert the mask that blocks everything except green -
-        # so now it only blocks the green area's
+        # create a white image with the dimensions of the input image. Scale with 255 to set all pixel values to 255 instead of 1, because that would result in a black image.
+        background = np.ones(img_BGR.shape, img_BGR.dtype)*255
+
+        # invert the mask that blocks everything except the desired colour range
         mask_inv = cv2.bitwise_not(mask)
-        # apply the inverted mask to the white image,
-        # so it now has black where the original image had green
-        masked_bg = cv2.bitwise_and(background, background, mask = mask_inv)
-        # add the 2 images together. It adds all the pixel values, 
-        # so the result is white background and the the green from the first image
-        final = cv2.add(only_green, masked_bg)
+        # apply the inverted mask to the white image
+        masked_background = cv2.bitwise_and(background, background, mask = mask_inv)
+        # add the 2 images together. This yields an image with white background and the desired colours shown
+        final = cv2.add(desired_colours, masked_background)
         
         #show image
         #cv2.imshow(name, final)
         return final, mask
-    
-    def find_blue_cones(self, image):
+
+    def find_blue_cones(self, img):
         # Find all blue parts of the cone using HSV colour thresholding
-        img_blue, _ = self.colour_threshold_HSV(image, "img1", [80,95,110], [165,255,255])
+        img_blue = self.colour_threshold(img, [80,95,110], [165,255,255])
         
         # Find all the white lines on the cones by inverting the image to easily detect white colours with HSV colour thresholding
-        inv_image = 255-image
-        img_white_lines, _ = self.colour_threshold_HSV(inv_image, "img2", [0,0,0], [255,255,55])
+        inv_img = 255-img
+        img_white_lines = self.colour_threshold(inv_img, [0,0,0], [255,255,55])
 
         # Convert the images to greyscale to convert them to binary images
         gray_img_blue = cv2.cvtColor(img_blue, cv2.COLOR_BGR2GRAY)
@@ -194,14 +193,14 @@ class ConeDetector:
         # The bitwise_and operator helps us combine the to images so that the white colours (now black blobs) that were previously missing from the blue cones (also black blobs) 
         # are combined with each other resulting in an image consisting of whole cones
         result = cv2.bitwise_and(binary_img_blue, binary_img_white_lines)
-        result_image = 255-result
+        result_img = 255-result
 
         # Create a kernel to apply opening (dilation) and closing (erosion) to the image, which will help connecting the black and white cone parts completely, 
         # as there are still a few pixels that need to be connected
         kernel = np.ones((3,3), np.uint8)
-        opening_image = cv2.dilate(result_image, kernel, iterations= 1)
-        closing_image = cv2.erode(opening_image, kernel, iterations= 1)
-
-        #cv2.imshow("WIN?", closing_image)
+        opening_img = cv2.dilate(result_img, kernel, iterations= 1)
+        closing_img = cv2.erode(opening_img, kernel, iterations= 1)
+        
+        cv2.imshow("Blue Cones", closing_img)
         # Return the image
-        return closing_image
+        return closing_img
