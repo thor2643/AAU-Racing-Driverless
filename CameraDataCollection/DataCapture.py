@@ -11,11 +11,9 @@ class CameraConfig:
 
         # Set custom output file names if provided, or use defaults
         self.color_output_file = color_output_file or "color_video.avi"
-        # self.depth_output_file = depth_output_file or "depth_video.avi"
 
         self.codec = cv2.VideoWriter_fourcc(*'XVID')
         self.color_out = cv2.VideoWriter(self.color_output_file, self.codec, self.frame_rate, (self.width, self.height))
-        # self.depth_out = cv2.VideoWriter(self.depth_output_file, self.codec, self.frame_rate, (self.width, self.height))
 
     def configure_pipeline(self):
         pipeline = rs.pipeline()
@@ -55,12 +53,17 @@ def main():
 
     frame_counter = 0  # Initialize frame counter
 
+    # Create an align object for depth-color alignment
+    align_to = rs.stream.color
+    align = rs.align(align_to)
+
     try:
         while True:
             # Wait for a coherent pair of frames: depth and color
             frames = pipeline.wait_for_frames()
-            depth_frame = frames.get_depth_frame()
-            color_frame = frames.get_color_frame()
+            aligned_frames = align.process(frames)
+            depth_frame = aligned_frames.get_depth_frame()
+            color_frame = aligned_frames.get_color_frame()
             if not depth_frame or not color_frame:
                 continue
 
