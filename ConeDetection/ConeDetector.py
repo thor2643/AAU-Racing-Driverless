@@ -1,34 +1,11 @@
 import cv2
 import os
 import numpy as np
+from image_processor import ImageProcessor
 
 class ConeDetector:
     def __init__(self) -> None:
         pass
-
-    def remove_image_frame(self, image):
-        dist_to_horizontal_edge = 0
-        dist_to_vertical_edge = 0
-        height, width = image.shape[:2]
-
-        x = int(width / 2)    
-        for y in range(image.shape[0]):
-            if not image[y, x].all():
-                dist_to_horizontal_edge += 1
-            else:
-                break
-
-        y = int(height / 2)
-        for x in range(image.shape[1]):
-            if not image[y, x].all():
-                dist_to_vertical_edge += 1
-            else:
-                break
-        
-        sliced_image = image[dist_to_horizontal_edge:image.shape[0]-dist_to_horizontal_edge, dist_to_vertical_edge:image.shape[1]-dist_to_vertical_edge]
-        
-        return sliced_image
-
 
     def get_blobs_and_features(self, img, method = cv2.CHAIN_APPROX_SIMPLE):
         contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, method)
@@ -176,11 +153,11 @@ class ConeDetector:
 
     def find_blue_cones(self, img):
         # Find all blue parts of the cone using HSV colour thresholding
-        img_blue = self.colour_threshold(img, [80,95,110], [165,255,255])
+        img_blue, _ = self.colour_threshold(img, [80,95,110], [165,255,255])
         
         # Find all the white lines on the cones by inverting the image to easily detect white colours with HSV colour thresholding
         inv_img = 255-img
-        img_white_lines = self.colour_threshold(inv_img, [0,0,0], [255,255,55])
+        img_white_lines, _ = self.colour_threshold(inv_img, [0,0,0], [255,255,55])
 
         # Convert the images to greyscale to convert them to binary images
         gray_img_blue = cv2.cvtColor(img_blue, cv2.COLOR_BGR2GRAY)
@@ -204,3 +181,50 @@ class ConeDetector:
         cv2.imshow("Blue Cones", closing_img)
         # Return the image
         return closing_img
+
+    def find_yellow_cones_with_laplacian(self, img):
+        # Threshold images
+        img_yellow = self.colour_threshold(img, [20, 95, 110], [35, 255, 255])
+        img_cone = self.colour_threshold(img, [26, 32, 42], [100, 255, 255], "BGR")
+    
+        # Convert to grayscale and then to binary
+        gray_img_cone = cv2.cvtColor(img_cone, cv2.COLOR_BGR2GRAY)
+        _, binary_img_cone = cv2.threshold(gray_img_cone, 245, 255, cv2.THRESH_BINARY)
+    
+        BGR_img_yellow = cv2.cvtColor(img_yellow, cv2.COLOR_HSV2BGR) 
+        
+        # Apply Laplacian to img_yellow
+        laplacian = cv2.Laplacian(BGR_img_yellow, cv2.CV_64F)
+        laplacian_2 = cv2.convertScaleAbs(laplacian) 
+        #print(laplacian_2.shape)
+        # Resize Laplacian to match the dimensions of binary_img_cone
+        gray_img_laplacian = cv2.cvtColor(laplacian_2, cv2.COLOR_BGR2GRAY)
+
+        # Apply threshold to Laplacian result
+        _, binary_img_laplacian = cv2.threshold(gray_img_laplacian, 100, 255, cv2.THRESH_BINARY)
+        inv_binary_img_laplacian = 255-binary_img_laplacian
+        
+        # Perform bitwise_and operation with the binary cone mask
+        summed_img = cv2.bitwise_and(binary_img_cone, inv_binary_img_laplacian)
+
+        # Use opening and closing on the image to complete the cones
+        kernel = np.ones((3,3), np.uint8)
+        opening_img = cv2.erode(summed_img, kernel, iterations= 1)
+        closing_img = cv2.dilate(opening_img, kernel, iterations= 1)
+
+        # Invert the image to get black cones on a white background and remove any larger blobs that are not cones
+        inv_closing_img = 255 - closing_img
+        final_img = ImageProcessor.remove_blobs(inv_closing_img)
+        
+        # Display the result
+        cv2.imshow('Yellow Cones', final_img)
+        return final_img
+    
+    def find_orange_cones(self, img):
+        img_orange_cones = self.colour_threshold(img, [0, 0, 81], [163, 188, 255], "BGR")
+
+        gray_img_orange_cones = cv2.cvtColor(img_orange_cones, cv2.COLOR_BGR2GRAY)
+
+        _, binary_img_orange_cones = cv2.threshold(gray_img_orange_cones, 165, 255, cv2.THRESH_BINARY)  
+
+        cv2.imshow('Binary Orange Cones', binary_img_orange_cones)

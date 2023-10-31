@@ -6,17 +6,38 @@ class ImageProcessor():
     def __init__(self) -> None:
         pass
         
+    def remove_image_frame(self, image):
+        dist_to_horizontal_edge = 0
+        dist_to_vertical_edge = 0
+        height, width = image.shape[:2]
 
+        x = int(width / 2)    
+        for y in range(image.shape[0]):
+            if not image[y, x].all():
+                dist_to_horizontal_edge += 1
+            else:
+                break
 
-    def remove_all_but_concrete(image, lower_yuv: list, upper_yuv: list):
+        y = int(height / 2)
+        for x in range(image.shape[1]):
+            if not image[y, x].all():
+                dist_to_vertical_edge += 1
+            else:
+                break
+        
+        sliced_image = image[dist_to_horizontal_edge:image.shape[0]-dist_to_horizontal_edge, dist_to_vertical_edge:image.shape[1]-dist_to_vertical_edge]
+        
+        return sliced_image
+
+    def remove_all_but_concrete(self, img, lower_yuv: list, upper_yuv: list):
         lower_yuv = np.array(lower_yuv, dtype=np.uint8)  # Convert to NumPy array
         upper_yuv = np.array(upper_yuv, dtype=np.uint8)  # Convert to NumPy array
 
         # 1. Convert the image to YUV color space
-        yuv_image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
+        yuv_img = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
 
         # 2. Apply YUV thresholding to find concrete areas
-        yuv_mask = cv2.inRange(yuv_image, lower_yuv, upper_yuv)
+        yuv_mask = cv2.inRange(yuv_img, lower_yuv, upper_yuv)
 
         # 3. Find contours in the binary mask
         contours, _ = cv2.findContours(yuv_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -36,15 +57,15 @@ class ImageProcessor():
             x, y, w, h = cv2.boundingRect(largest_blob)
 
             # 6. Crop the original image using the bounding box
-            concrete_area = image[y:y+h, x:x+w]
+            concrete_area = img[y:y+h, x:x+w]
 
             return concrete_area
 
         # 7. If no concrete is found, return None
         return None
 
-    def remove_blobs(image):
-        binary_mask = image
+    def remove_blobs(self, img):
+        binary_mask = img
 
         # Find blobs and filter based on area
         contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
