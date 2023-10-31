@@ -41,7 +41,8 @@ class CameraConfig:
         return pipeline, config
 
 def main():
-    camera_config = CameraConfig(width=640, height=480, frame_rate=30, color_output_file="Color.avi")
+    #camera_config = CameraConfig(width=1280, height=720, frame_rate=30, color_output_file="Color.avi")
+    camera_config = CameraConfig(width=848, height=480, frame_rate=60, color_output_file="Color.avi")
 
     # Create the "DepthData" directory if it doesn't exist
     if not os.path.exists("DepthData"):
