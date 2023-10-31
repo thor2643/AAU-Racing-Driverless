@@ -52,36 +52,33 @@ kernel3 = np.array([[0,0,0,0,0,0,0],
                     [0,0,0,0,0,0,0]], np.uint8)
 
 
-def colour_threshold(image, colourspace: str, lower_val: list, upper_val: list):
+def colour_threshold(image_BGR, lower_val: list, upper_val: list, colourspace="HSV"):
     if colourspace == "HSV":
-        # convert to HSV
-        colour_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV) 
+        colour_image = cv2.cvtColor(image_BGR, cv2.COLOR_BGR2HSV) 
     elif colourspace == "BGR":
-        colour_image = image
+        colour_image = image_BGR
+    elif colourspace == "YUV":
+        colour_image = cv2.cvtColor(image_BGR, cv2.COLOR_BGR2YUV)
 
     # set lower and upper colour limits
     temp_lower_val = np.array(lower_val)
     temp_upper_val = np.array(upper_val)
 
-    # Threshold the HSV image to get only green colours
+    # Threshold the image to get a desired colour range
     mask = cv2.inRange(colour_image, temp_lower_val, temp_upper_val)
 
-    # apply mask to original image - this shows the green with black blackground
-    only_green = cv2.bitwise_and(image, image, mask = mask)
+    # apply mask to original image. This shows the desired colour range with a black blackground
+    desired_colours = cv2.bitwise_and(image_BGR, image_BGR, mask = mask)
 
-    # create a black image with the dimensions of the input image
-    background = np.zeros(image.shape, image.dtype)
-    # invert to create a white image
-    background = cv2.bitwise_not(background)
-    # invert the mask that blocks everything except green -
-    # so now it only blocks the green area's
+    # create a white image with the dimensions of the input image. Scale with 255 to set all pixel values to 255 instead of 1, because that would result in a black image.
+    background = np.ones(image_BGR.shape, image_BGR.dtype)*255
+
+    # invert the mask that blocks everything except the desired colour range
     mask_inv = cv2.bitwise_not(mask)
-    # apply the inverted mask to the white image,
-    # so it now has black where the original image had green
-    masked_bg = cv2.bitwise_and(background, background, mask = mask_inv)
-    # add the 2 images together. It adds all the pixel values, 
-    # so the result is white background and the the green from the first image
-    final = cv2.add(only_green, masked_bg)
+    # apply the inverted mask to the white image
+    masked_background = cv2.bitwise_and(background, background, mask = mask_inv)
+    # add the 2 images together. This yields an image with white background and the desired colours shown
+    final = cv2.add(desired_colours, masked_background)
     
     #show image
     #cv2.imshow(name, final)
@@ -148,11 +145,11 @@ def mean_image(image):
 
 def find_blue_cones(image):
     # Find all blue parts of the cone using HSV colour thresholding
-    img_blue = colour_threshold(image, "HSV", [80,95,110], [165,255,255])
+    img_blue = colour_threshold(image, [80,95,110], [165,255,255])
     
     # Find all the white lines on the cones by inverting the image to easily detect white colours with HSV colour thresholding
     inv_image = 255-image
-    img_white_lines = colour_threshold(inv_image, "HSV", [0,0,0], [255,255,55])
+    img_white_lines = colour_threshold(inv_image, [0,0,0], [255,255,55])
 
     # Convert the images to greyscale to convert them to binary images
     gray_img_blue = cv2.cvtColor(img_blue, cv2.COLOR_BGR2GRAY)
@@ -172,52 +169,17 @@ def find_blue_cones(image):
     kernel = np.ones((3,3), np.uint8)
     opening_image = cv2.dilate(result_image, kernel, iterations= 1)
     closing_image = cv2.erode(opening_image, kernel, iterations= 1)
-
-    #cv2.imshow("WIN?", closing_image)
+    
+    cv2.imshow("WIN?", closing_image)
     # Return the image
     return closing_image
-
-def find_yellow_cones(image):
-    enhance_img = enhance_contrast(image)
-
-    gray_enhance_img = cv2.cvtColor(enhance_img, cv2.COLOR_BGR2GRAY)
-
-    # Apply adaptive thresholding
-    # You can choose from different methods like cv2.ADAPTIVE_THRESH_MEAN_C or cv2.ADAPTIVE_THRESH_GAUSSIAN_C
-    # Block size defines the size of the neighborhood area for threshold calculation
-    # C is a constant subtracted from the mean (or weighted mean in the case of Gaussian) value
-    #result = cv2.adaptiveThreshold(gray_enhance_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, blockSize=3, C=6)
-    
-    img_yellow = colour_threshold(enhance_img, "HSV", [20,95,110], [35,255,255])
-
-    inv_image = 255-image
-    img_black_lines = colour_threshold(enhance_img, "HSV", [10,75,0], [75,255,255]) #[0,0,0], [255,255,255], (enhance_img, "BGR", [50,55,120], [255,255,255])
-    
-    # Creating grayscale images
-    gray_img_yellow = cv2.cvtColor(img_yellow, cv2.COLOR_BGR2GRAY)
-    gray_img_black = cv2.cvtColor(img_black_lines, cv2.COLOR_BGR2GRAY)
-    
-    result = cv2.adaptiveThreshold(gray_img_black, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, blockSize=13, C=2)
-    inv_result = 255-result
-
-    # Set up a threshold mark for making binary images
-    _, binary_img_yellow = cv2.threshold(gray_img_yellow, 245, 255, cv2.THRESH_BINARY)
-    inv_binary_img_yellow = 255-binary_img_yellow
-    eroded_result = cv2.dilate(result, kernel2, iterations= 1)
-    background = np.zeros(eroded_result.shape, eroded_result.dtype)
-    hej = cv2.bitwise_xor(eroded_result, inv_result, inv_result)
-
-    #cv2.imshow("Something", hej)
-    #cv2.imshow("Result", inv_result)
-    #cv2.imshow("Yellow Cones", binary_img_yellow)
-    cv2.imshow("Black Cones", img_black_lines)
 
 def find_yellow_cones_with_laplacian(image):
     # 1. Load the image
     enhance_img = image #enhance_contrast(image)
-    img_yellow = colour_threshold(enhance_img, "HSV", [20, 95, 110], [35, 255, 255])
-    img_cone = colour_threshold(enhance_img, "BGR", [26, 32, 42], [100, 255, 255])
-    img_orange_cones = colour_threshold(enhance_img, "BGR", [0, 0, 81], [163, 188, 255])
+    img_yellow = colour_threshold(enhance_img, [20, 95, 110], [35, 255, 255])
+    img_cone = colour_threshold(enhance_img, [26, 32, 42], [100, 255, 255], "BGR")
+    img_orange_cones = colour_threshold(enhance_img, [0, 0, 81], [163, 188, 255], "BGR")
     # 2. Convert to grayscale
     gray_img_cone = cv2.cvtColor(img_cone, cv2.COLOR_BGR2GRAY)
     gray_img_orange_cones = cv2.cvtColor(img_orange_cones, cv2.COLOR_BGR2GRAY)
@@ -245,9 +207,51 @@ def find_yellow_cones_with_laplacian(image):
     final_img = remove_background_noise(removed_blobs_image)
     
     #cv2.imshow('Orange Cones', img_orange_cones)
+    cv2.imshow("Yellow image", img_yellow)
+    cv2.imshow("binary image cone (laplacian)", binary_img_laplacian)
+    cv2.imshow("actual binary image cone", binary_img_cone)
     cv2.imshow('Binary Orange Cones', binary_img_orange_cones)
     cv2.imshow('Background removal', final_img)
 
+def find_yellow_cones_with_laplacian2(image):
+    # 1. Threshold images
+    img_yellow = colour_threshold(image, [20, 95, 110], [35, 255, 255])
+    img_cone = colour_threshold(image, [26, 32, 42], [100, 255, 255], "BGR")
+    img_orange_cones = colour_threshold(image, [0, 0, 81], [163, 188, 255], "BGR")
+
+    # 2. Convert to grayscale
+    gray_img_cone = cv2.cvtColor(img_cone, cv2.COLOR_BGR2GRAY)
+    gray_img_orange_cones = cv2.cvtColor(img_orange_cones, cv2.COLOR_BGR2GRAY)
+
+    _, binary_img_cone = cv2.threshold(gray_img_cone, 245, 255, cv2.THRESH_BINARY)
+    _, binary_img_orange_cones = cv2.threshold(gray_img_orange_cones, 165, 255, cv2.THRESH_BINARY)
+    
+    BGR_image_yellow = cv2.cvtColor(img_yellow, cv2.COLOR_HSV2BGR) 
+    
+    # 3. Apply Laplacian to the img_yellow
+    laplacian = cv2.Laplacian(BGR_image_yellow, cv2.CV_64F)
+    laplacian_2 = cv2.convertScaleAbs(laplacian) 
+    #print(laplacian_2.shape)
+    # Resize Laplacian to match the dimensions of binary_img_cone
+    gray_img_laplacian = cv2.cvtColor(laplacian_2, cv2.COLOR_BGR2GRAY)
+
+    # Apply threshold to Laplacian result
+    _, binary_img_laplacian = cv2.threshold(gray_img_laplacian, 100, 255, cv2.THRESH_BINARY)
+
+    # Perform bitwise OR operation with the binary cone mask
+    summed_img = cv2.bitwise_and(binary_img_cone, binary_img_laplacian)
+    kernel = np.ones((3,3), np.uint8)
+    opening_image = cv2.erode(summed_img, kernel, iterations= 1)
+    closing_image = cv2.dilate(opening_image, kernel, iterations= 1)
+    inv_closing_img = 255 - closing_image
+    removed_blobs_image = remove_blobs(inv_closing_img)
+    final_img = remove_background_noise(removed_blobs_image)
+    
+    #cv2.imshow('Orange Cones', img_orange_cones)
+    cv2.imshow('image yellow', img_yellow)
+    cv2.imshow('Laplacian', laplacian_2)
+    cv2.imshow('Binary Orange Cones 2', binary_img_orange_cones)
+    cv2.imshow('Background removal 2', final_img)
 
 
 def remove_blobs(image):
@@ -327,10 +331,13 @@ def remove_all_but_concrete(image, lower_yuv: list, upper_yuv: list):
     # 7. If no concrete is found, return None
     return None
 
-concrete = remove_all_but_concrete(resized_image_4, [103, 120, 125], [198, 133, 140])
+concrete = remove_all_but_concrete(resized_image_3, [103, 120, 125], [198, 133, 140])
 #cv2.imshow("Concrete", concrete)
 
-find_yellow_cones_with_laplacian(concrete)
+#find_yellow_cones_with_laplacian(concrete)
+#find_yellow_cones_with_laplacian2(concrete)
+
+find_blue_cones(concrete)
 
 cv2.waitKey()
 cv2.destroyAllWindows()
