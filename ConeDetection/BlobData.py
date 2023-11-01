@@ -63,7 +63,7 @@ def cone_or_not(img,img_BGR):
         return -2
     else:
         print("Invalid input please try again. y=cone, n=not cone")
-        return cone_or_not(img, img_RGB)
+        return cone_or_not(img, img_BGR)
         
      
 input_path = "Images\FrameRemoved"
