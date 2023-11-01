@@ -5,29 +5,25 @@ import os
 
 def click_event(event, x, y, flags, param):
     global coords
+    global shape
 
     #printer koordinaterne ved venstreklik
     if event == cv2.EVENT_LBUTTONDOWN:
         font = cv2.FONT_HERSHEY_SIMPLEX
         strXY = str(len(coords)) #str(x) laver det om til en string 
 
-        if len(coords) == 0:
-            coords.append([[x, y]])
-            cv2.putText(img_shown, strXY, (x, y), font, 0.5, (255, 255, 0), 2)
+        coords.append([[int(x-shape[0]/2), int(y-shape[1]/2)],
+                       [int(x+shape[0]/2), int(y+shape[1]/2)]])
 
-        elif len(coords[len(coords)-1]) == 1:
-            coords[len(coords)-1].append([x, y])
-            cv2.rectangle(img_shown, (coords[len(coords)-1][0][0], coords[len(coords)-1][0][1]), (coords[len(coords)-1][1][0], coords[len(coords)-1][1][1]), (0, 0, 255), 2)
-
-        elif len(coords[len(coords)-1]) == 2:
-            coords.append([[x, y]])
-            cv2.putText(img_shown, strXY, (x, y), font, 0.5, (255, 255, 0), 2)
+        cv2.rectangle(img_shown, (coords[len(coords)-1][0][0], coords[len(coords)-1][0][1]), (coords[len(coords)-1][1][0], coords[len(coords)-1][1][1]), (0, 0, 255), 2)
 
 
         cv2.imshow('image', img_shown)
 
 
-    
+
+#        w    h
+shape = [32, 64]  
 input_folder = "Images\\Raw"
 output_folder = "Images\\Other"
 
