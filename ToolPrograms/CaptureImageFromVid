@@ -1,0 +1,29 @@
+import cv2
+
+# Open the video file
+video_path = 'Data_AccelerationTrack/1/Color.avik'  # Replace with your video file path
+cap = cv2.VideoCapture(video_path)
+
+while True:
+    ret, frame = cap.read()
+
+    if not ret:
+        print("End of video.")
+        break
+
+    cv2.imshow('Video Frame', frame)
+
+    # Handle user input
+    key = cv2.waitKey(0)
+
+    if key == ord('s'):
+        # Save the current frame as an image when 's' key is pressed
+        frame_filename = f'frame_{cap.get(cv2.CAP_PROP_POS_FRAMES)}.jpg'
+        cv2.imwrite(frame_filename, frame)
+        print(f"Saved {frame_filename}")
+    elif key == ord('q'):
+        break
+
+# Release the video capture object and close the OpenCV window
+cap.release()
+cv2.destroyAllWindows()

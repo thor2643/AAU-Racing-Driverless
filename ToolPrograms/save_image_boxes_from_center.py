@@ -24,10 +24,10 @@ def click_event(event, x, y, flags, param):
 
 #        w    h
 shape = [32, 64]  
-input_folder = "Images\\Raw"
-output_folder = "Images\\Other"
+input_folder = "HOG/Cones/_PicturesWithCones"
+output_folder = "HOG/Cones"
 
-general_name = "Temporary_cone_"
+general_name = "Cone_"
 
 #128x64
 
