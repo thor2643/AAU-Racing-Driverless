@@ -27,7 +27,7 @@ shape = [32, 64]
 input_folder = "HOG/Cones/_PicturesWithCones"
 output_folder = "HOG/Cones"
 
-general_name = "Cone_"
+general_name = "neutral_"
 
 #128x64
 

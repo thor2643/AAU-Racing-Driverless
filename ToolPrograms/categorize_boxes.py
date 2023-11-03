@@ -2,7 +2,7 @@ import cv2
 import os
 
 # Path to folder containing images
-input_folder_path = "Hog//Cones//unsorted_boxes"
+input_folder_path = "Hog//Cones//ekstra"
 output_folder_path_yellow = "Hog//Cones//Yellow"
 output_folder_path_blue = "Hog//Cones//Blue"
 output_folder_path_negative = "Hog//Cones//NegativeSamples"
@@ -36,7 +36,7 @@ for filename in os.listdir(input_folder_path):
         # if the key pressed is "n"
         elif key == ord("n"):
             #chance name of image to negative
-            filename = filename.replace(".jpg", "_negative.jpg")
+            filename = filename.replace(".jpg", "_negative1.jpg")
             # save the image in the negative folder
             cv2.imwrite(os.path.join(output_folder_path_negative, filename), image)
             
