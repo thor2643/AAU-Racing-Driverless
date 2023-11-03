@@ -17,8 +17,8 @@ def featureExtraction(path):
     img = cv2.imread(path)
     img = Resize(img)
 
-    hog = cv2.HOGDescriptor()
-    hog_features = hog.compute(img)
+    # hog = cv2.HOGDescriptor()
+    # hog_features = hog.compute(img)
 
     img = np.float32(img) / 255.0
     
@@ -48,6 +48,8 @@ def featureExtraction(path):
             hist = np.zeros(9)
             for k in range(8):
                 for l in range(8):
+
+                    # Check om vinklerne skal fordeles anderledes!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                     # Check what the angles is. If it is between 160 and 180, the value should porportionally be added to the 0 bin and the 160 bin
                     if cell_angle[k, l, 0] >= 160:
@@ -85,7 +87,6 @@ def featureExtraction(path):
                 feature_vector[i*63 + j*9 + k] = normalized_histogram[i, j, k]
 
     return feature_vector 
-
 
 def main():
     img = cv2.imread("Hog/Cones/Bluecone_resized.jpg")
