@@ -157,7 +157,7 @@ def trainSVMModel(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Train an SVM classifier
-    clf = svm.SVC(kernel='linear', C=1)
+    clf = svm.SVC(kernel='rbf', C=1)
     clf.fit(X_train, y_train)
 
     # Calculate the accuracy of the classifier
@@ -166,7 +166,7 @@ def trainSVMModel(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder):
 
     return clf
 
-def HOG_predict(query_image = cv2.imread("Hog/Cones/_PicturesWithCones/frame_0.jpg")):
+def HOG_predict(query_image = cv2.imread("Hog/Cones/_PicturesWithCones/frame_206.0.jpg")):
     # First we check if we have a model trained already, if not we should train one
     print("Checking if a model is already trained...")
     if os.path.isfile("Hog/SVM_HOG_Model.pkl"):
@@ -212,7 +212,7 @@ def HOG_predict(query_image = cv2.imread("Hog/Cones/_PicturesWithCones/frame_0.j
            
     # Display or save the image with potential cone locations marked
     cv2.imshow("Potential Cones", query_image_original)
-    cv2.imshow("Potential Cones2", query_image)
+    #cv2.imshow("Potential Cones2", query_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

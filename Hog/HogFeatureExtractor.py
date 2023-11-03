@@ -110,7 +110,7 @@ def saveFeaturesInFolder(input_folder, output_folder):
     for filename in os.listdir(input_folder):
         # Extract the image name without extension
         # img_name = filename.split(".")[0]
-        img_name = "NegativeSample" + str(i)
+        img_name = "NegativeSamples" + str(i)
 
         feature_vector = featureExtraction(os.path.join(input_folder, filename))
         np.save(os.path.join(output_folder, img_name), feature_vector)
