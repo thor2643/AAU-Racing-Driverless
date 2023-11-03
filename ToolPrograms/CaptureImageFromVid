@@ -1,7 +1,7 @@
 import cv2
 
 # Open the video file
-video_path = 'Data_AccelerationTrack/1/Color.avik'  # Replace with your video file path
+video_path = 'Data_AccelerationTrack//4//Color.avi'  # Replace with your video file path
 cap = cv2.VideoCapture(video_path)
 
 while True:
