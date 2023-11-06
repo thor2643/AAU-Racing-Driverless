@@ -3,10 +3,186 @@ import os
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+from PIL import Image, ImageEnhance
 
-input_folder = "cone_tracking_data"
-output_folder = "preprocessed_images"
-folder = "Thor_data"
+   
+def finds_LAB_reference_from_folder(folder):
+    numb_images = 0
+    L_s_mean = 0
+    L_s_std = 0
+    A_s_mean = 0
+    A_s_std = 0
+    B_s_mean = 0
+    B_s_std = 0
+    for filename in os.listdir(folder):
+        if filename.endswith(".jpg" or ".png"):
+            image = cv2.imread(os.path.join(folder, filename))
+            #convert the images from RGB to LAB
+            img_source = cv2.cvtColor(image, cv2.COLOR_BGR2LAB).astype("float32")
+            #splitting the images into channels
+            L_s ,A_s ,B_s =cv2.split(img_source)
+            #computing the mean and standard deviation of each channel for both images
+            #for source image
+            L_s_mean_temp, L_s_std_temp = L_s.mean(), L_s.std()
+            A_s_mean_temp, A_s_std_temp = A_s.mean(), A_s.std()
+            B_s_mean_temp, B_s_std_temp = B_s.mean(), B_s.std()
+            
+            #add it together for all images
+            L_s_mean += L_s_mean_temp
+            L_s_std += L_s_std_temp
+            A_s_mean += A_s_mean_temp
+            A_s_std += A_s_std_temp
+            B_s_mean += B_s_mean_temp
+            B_s_std += B_s_std_temp
+            
+            numb_images += 1
+    #calculate the mean value of all images
+    L_s_mean = L_s_mean / numb_images
+    L_s_std = L_s_std / numb_images
+    A_s_mean = A_s_mean / numb_images
+    A_s_std = A_s_std / numb_images
+    B_s_mean = B_s_mean / numb_images
+    B_s_std = B_s_std / numb_images
+    return L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std
+
+#color transfer
+#change the color of the processed_img to match the color of the reference image
+def color_transfer(processed_img):
+    #the folder where the reference images are located
+    folder = "Images//Color_transfer"
+
+    #convert the images from RGB to LAB
+    img_target = cv2.cvtColor(processed_img, cv2.COLOR_BGR2LAB).astype("float32")
+    #splitting the images into channels
+    L_t ,A_t ,B_t =cv2.split(img_target)
+    
+    #computing the mean and standard deviation of each channel for both images
+    #for source image
+    L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder(folder)
+    #for target image
+    L_t_mean, L_t_std = L_t.mean(), L_t.std()
+    A_t_mean, A_t_std = A_t.mean(), A_t.std()
+    B_t_mean, B_t_std = B_t.mean(), B_t.std()
+
+    #subtracting the means from the target image
+    L_t -= L_t_mean
+    A_t -= A_t_mean
+    B_t -= B_t_mean
+    
+    #scaling the target channels by the standard deviation ratio
+    L_t = L_t * (L_t_std / L_s_std)
+    A_t = A_t * (A_t_std / A_s_std)
+    B_t = B_t * (B_t_std / B_s_std)
+    
+    #Add in the means of the Lab channels for the source.
+    L_t += L_s_mean
+    A_t += A_s_mean
+    B_t += B_s_mean
+    
+    #Making shure all values are in the range [0, 255]
+    L_t = np.clip(L_t, 0, 255)
+    A_t = np.clip(A_t, 0, 255)
+    B_t = np.clip(B_t, 0, 255)
+    
+    # Merge the channels together and convert back to the RGB color space,
+    # being sure to utilize the 8-bit unsigned integer data type.
+    transfer = cv2.merge([L_t, A_t, B_t])
+    temp_img = cv2.cvtColor(transfer.astype("uint8"), cv2.COLOR_LAB2BGR)
+    return temp_img
+
+def color_enhancement(processed_img):
+    # Convert BGR to RGB colorspace
+    image_rgb = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
+    # Convert to PIL image
+    im = Image.fromarray(image_rgb)
+    # Creating an object of Color class
+    im3 = ImageEnhance.Color(im)
+    # this factor controls the enhancement factor. 0 gives a black and white image. 1 gives the original image
+    enhanced_image = im3.enhance(2)
+    # Convert the enhanced image to an OpenCV format
+    temp_img = cv2.cvtColor(np.array(enhanced_image), cv2.COLOR_RGB2BGR)
+    return temp_img
+
+def find_yellow(processed_img):
+
+    # Convert BGR to HSV colorspace
+    hsv = cv2.cvtColor(processed_img, cv2.COLOR_BGR2HSV)
+
+    # Define range of yellow color in HSV
+    lower_yellow = np.array([20, 100, 100])
+    upper_yellow = np.array([30, 255, 255])
+
+    # Threshold the HSV image to get only yellow colors
+    mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+
+    # Bitwise-AND mask and original image
+    temp_img = cv2.bitwise_and(processed_img, processed_img, mask=mask) 
+    return temp_img
+    
+def find_blue(processed_img):
+
+    # Convert BGR to HSV colorspace
+    hsv = cv2.cvtColor(processed_img, cv2.COLOR_BGR2HSV)
+
+    # Define range of blue color in HSV 
+    lower_blue = np.array([100, 50, 50])
+    upper_blue = np.array([130, 255, 255])
+    
+    
+    # Threshold the HSV image to get only blue colors
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
+
+    # Bitwise-AND mask and original image
+    temp_img = cv2.bitwise_and(processed_img, processed_img, mask=mask) 
+    return temp_img
+
+
+#load video from folder:
+video_folder = "Data_AccelerationTrack//1//Color.avi"
+cap = cv2.VideoCapture(video_folder)
+
+# Check if the video file was opened successfully
+if not cap.isOpened():
+    print("Error: Could not open video file.")
+    exit()
+
+while True:
+    # Read the frames of the video
+    ret , frame = cap.read()
+    
+    #if the frame is succesfully read, ret is True
+    if not ret:
+        break
+    
+    #process the frames:
+    frame = color_transfer(frame)
+    frame_yellow = color_enhancement(frame)
+    frame_blue = frame_yellow.copy()
+    frame_yellow = find_yellow(frame_yellow)
+    frame_blue = find_blue(frame_blue)
+    frame = cv2.add(frame_yellow, frame_blue)
+    #show the frames:
+    cv2.imshow("Video", frame)
+    
+    
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+
+
+
+
+
+
+
+
+
+
+
 
 #calculate the mean value all of the images in folder:
 def calculate_mean(RGB):        
@@ -116,11 +292,11 @@ def preprocessing():
         
         
             # Save the preprocessed image
-            image.save(os.path.join(output_folder, filename))
+            #image.save(os.path.join(output_folder, filename))
 
 #converter til float int point inden databehandling. hint fra andreas.
 #trying to remove contrast in image 
-img = cv2.imread("Images//FrameRemoved//Image_8.png")
+#img = cv2.imread("Images//FrameRemoved//Image_8.png")
 # image_float = img.astype(np.float32)
 # grayImg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 # filtersize = 201 
