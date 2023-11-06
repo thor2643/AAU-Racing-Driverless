@@ -1,0 +1,19 @@
+import os
+
+def rename_files_to_jpg(folder_path, prefix):
+    for filename in os.listdir(folder_path):
+        if os.path.isfile(os.path.join(folder_path, filename)):
+            # Check if the file has the expected prefix and does not have a ".jpg" extension
+            if filename.startswith(prefix) and not filename.endswith(".jpg"):
+                # Rename the file by adding the ".jpg" extension
+                new_filename = f"{filename}.jpg"
+                os.rename(os.path.join(folder_path, filename), os.path.join(folder_path, new_filename))
+                print(f"Renamed: {filename} -> {new_filename}")
+
+def main():
+    prefix = input("Enter the expected prefix: ")
+    folder_path = input("Enter the folder path: ")
+    rename_files_to_jpg(folder_path, prefix)
+
+if __name__ == "__main__":
+    main()
