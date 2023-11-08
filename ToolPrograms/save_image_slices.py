@@ -63,4 +63,3 @@ for i, filename in enumerate(os.listdir(input_folder)):
 
     if key == ord("q"):
         break
-

@@ -1,2 +1,9 @@
 *.json
 .vscode/
+fsoco_bounding_boxes_train/
+runs/
+YOLO/data
+YOLO/fsoco_sample
+Videos/
+Images/OwnData/
+YOLO/Test

@@ -291,7 +291,7 @@ trackbars = [[["HSV-color thresholds"], ["LH", "LS", "LV", "UH", "US", "UV", "Ap
 #______________________________________#__________________________________________#
 
 
-img_path = "Images\FrameRemoved\Image_1.jpg" #'Images\FrameRemoved\Image_6.jpg'
+img_path = "Images\FrameRemoved\Image_2.jpg" #'Images\FrameRemoved\Image_6.jpg'
 output_path = "Images\\Other"
 name_of_img = "test"
 
