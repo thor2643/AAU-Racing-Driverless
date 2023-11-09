@@ -1,5 +1,5 @@
 import sys
-sys.path.append('ConeDetection')
+#sys.path.append('ConeDetection')
 
 import os
 import cv2
