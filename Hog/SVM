@@ -105,7 +105,7 @@ def HOG_feature_extractor(input_image, useCustomHOG=True, target_width=64, targe
     else:
         return feature_vector
 
-def HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder):
+def HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, useCustomHOG = True, width = 64, height = 128):
     # Process blue cones, yellow cones, and negative samples folders
     positive_features = []  # To store blue and yellow cone features
     negative_features = []  # To store negative samples features
@@ -117,7 +117,10 @@ def HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSample
     for idx, folder_path in enumerate([BlueConesFolder, YellowConesFolder]):
         filenames = os.listdir(folder_path)
         for idy, filename in enumerate(filenames):
-            feature_vector = np.load(os.path.join(folder_path, filename))
+            
+            target_image = cv2.imread(os.path.join(folder_path, filename))
+            feature_vector = HOG_feature_extractor(target_image, useCustomHOG, width, height)
+
             # Check if we are looking at the first file in the folder
             if not (np.isnan(feature_vector).any()) and (feature_vector.shape[0] == 3780):
                 if idx == 0 and idy == 0:
@@ -136,16 +139,19 @@ def HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSample
 
     for idx, folder_path in enumerate([NegativeSamplesFolder]):
         filenames = os.listdir(folder_path)
-    for idy, filename in enumerate(filenames):
-        feature_vector = np.load(os.path.join(folder_path, filename))
-        # Check if we are looking at the first file in the folder
-        if not (np.isnan(feature_vector).any()) and (feature_vector.shape[0] == 3780):
-            if idx == 0 and idy == 0:
-                negative_features = feature_vector
-            else:
-                correcly_loaded += 1
-                negative_features = np.column_stack((negative_features, feature_vector))
-        total_load_attempts += 1
+        for idy, filename in enumerate(filenames):
+
+            target_image = cv2.imread(os.path.join(folder_path, filename))
+            feature_vector = HOG_feature_extractor(target_image, useCustomHOG, width, height)
+
+            # Check if we are looking at the first file in the folder
+            if not (np.isnan(feature_vector).any()) and (feature_vector.shape[0] == 3780):
+                if idx == 0 and idy == 0:
+                    negative_features = feature_vector
+                else:
+                    correcly_loaded += 1
+                    negative_features = np.column_stack((negative_features, feature_vector))
+            total_load_attempts += 1
 
     # Check how many features are loaded correctly out of the total number of features
     print("Number of features loaded correctly: " + str(correcly_loaded) + " out of " + str(total_load_attempts) + " features" )
@@ -161,10 +167,9 @@ def HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSample
 
     return positive_features, positive_labels, negative_features, negative_labels
 
-
 # SVM classifier and prediction
 def train_SVM_model(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, kernel='rbf', C=1):
-    positive_features, positive_labels, negative_features, negative_labels, = HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder)
+    positive_features, positive_labels, negative_features, negative_labels, = HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, False, width= 64, height = 128)
 
     # Combine all features and labels
     x = np.vstack((positive_features, negative_features))
@@ -174,7 +179,7 @@ def train_SVM_model(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, k
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
     # Train an SVM classifier - Kernel is the kernel type, C is the penalty parameter of the error term
-    clf = svm.SVC(kernel, C)
+    clf = svm.SVC(kernel=kernel, C=C)
     clf.fit(X_train, y_train)
 
     # Calculate the accuracy of the classifier
@@ -183,7 +188,7 @@ def train_SVM_model(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, k
 
     return clf
 
-def sliding_window(query_image, clf, custom_Hog = False, window_size = (32, 64), step_size = 16):
+def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128), step_size = 16):
     # Iterate through the image using a sliding window
     cone_locations = []
     for y in range(0, query_image.shape[0] - window_size[1], step_size):
@@ -191,8 +196,11 @@ def sliding_window(query_image, clf, custom_Hog = False, window_size = (32, 64),
             # Extract the current window
             window = query_image[y:y+window_size[1], x:x+window_size[0]]
 
+            #Resize the window to 128x64
+            window = resize(window, 64, 128)
+
             # Compute HOG features for the current window
-            window_features = HOG_feature_extractor(window, custom_Hog)
+            window_features = HOG_feature_extractor(window, custom_Hog, 64, 128)
 
             # Use the trained SVM to classify the window
             prediction = clf.predict([window_features])
@@ -203,37 +211,36 @@ def sliding_window(query_image, clf, custom_Hog = False, window_size = (32, 64),
                 cone_locations.append((x, y))
     return cone_locations
 
-def HOG_predict(query_image, clf_s , clf_m, clf_b, custom_Hog = False):
+def HOG_predict(query_image, clf, custom_Hog = False):
     # Iterate through the image using a sliding window
     cone_locations = []
     top_middle_cone_locations = []
     middle_cone_locations = []
     bottom_cone_locations = []
 
+    Bias = 32
+
     #Split the image into three new images.
-    top_middle = query_image[0:query_image.shape[0]//3, query_image.shape[1]//6:query_image.shape[1]//3]    # 32 x 16
-    middle = query_image[0:query_image.shape[0], query_image.shape[1]//3:query_image.shape[1]//3 * 2]       # 64 x 32
-    bottom = query_image[0:query_image.shape[0], query_image.shape[1]//3 * 2:query_image.shape[1]]          # 128 x 64
+    top_middle = query_image[query_image.shape[0]//2:query_image.shape[0]//2 + Bias, 0:query_image.shape[1]]    # 32 x 16
+    middle = query_image[query_image.shape[0]//2:query_image.shape[0]//2 + Bias * 3, 0:query_image.shape[1]]       # 64 x 32
+    bottom = query_image[query_image.shape[0]//2:query_image.shape[0], 0:query_image.shape[1]]          # 128 x 64
+
 
     # Detect cones in the images
-    sliding_window(top_middle, clf_s, custom_Hog, (16, 32), 8)
-    sliding_window(middle, clf_m, custom_Hog, (32, 64), 16)
-    sliding_window(bottom, clf_b, custom_Hog, (64, 128), 32)
+    top_middle_cone_locations = sliding_window(top_middle, clf, custom_Hog, (16, 32), 8)
+    middle_cone_locations = sliding_window(middle, clf, custom_Hog, (32, 64), 16)
+    bottom_cone_locations = sliding_window(bottom, clf, custom_Hog, (64, 128), 32)
 
-    # Transform the locations back to the original image
-    for i in range(len(top_middle_cone_locations)):
-        top_middle_cone_locations[i] = (top_middle_cone_locations[i][0], top_middle_cone_locations[i][1]+ + query_image.shape[1]//6)
-    for i in range(len(middle_cone_locations)):
-        middle_cone_locations[i] = (middle_cone_locations[i][0], middle_cone_locations[i][1]+ + query_image.shape[1]//3)
-    for i in range(len(bottom_cone_locations)):
-        bottom_cone_locations[i] = (bottom_cone_locations[i][0], bottom_cone_locations[i][1]+ + query_image.shape[1]//3 * 2)
-    
-    # Combine the cone locations
-    cone_locations = top_middle_cone_locations + middle_cone_locations + bottom_cone_locations
+    # Transform the locations back to the original image    
+    for locations in [top_middle_cone_locations, middle_cone_locations, bottom_cone_locations]:
+        for i in range(len(locations)):
+            # Append to list with cones, while transforming the coordinates back to the original image
+            cone_locations.append((locations[i][0], locations[i][1] + query_image.shape[0]//2))
+
 
     return cone_locations
 
-def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", blueconesfolder = "Hog/HogFeatures/Blue", yellowconesfolder = "Hog/HogFeatures/Yellow", negativesamplesfolder = "Hog/HogFeatures/NegativeSamples"):
+def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", blueconesfolder = "Hog/Cones/Blue", yellowconesfolder = "Hog/Cones/Yellow", negativesamplesfolder = "Hog/Cones/NegativeSamples", kernel='rbf', C=1, width = 64, height = 128):
     # First we check if we have a model trained already, if not we should train one
     print("Checking if a model is already trained...")
     if os.path.isfile(modelpath):
@@ -244,7 +251,7 @@ def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", blueconesfolder = 
     else:
         print("No model was found. Training a new model...")
         # Train the model
-        clf = train_SVM_model(blueconesfolder, yellowconesfolder, negativesamplesfolder)
+        clf = train_SVM_model(blueconesfolder, yellowconesfolder, negativesamplesfolder, C = 1)
 
         # Save the model
         with open(modelpath, "wb") as f:
@@ -258,10 +265,10 @@ def simulate_racecar_driving(target_frame_rate=30):
     # Load video
     cap = cv2.VideoCapture("Data_AccelerationTrack/1/Color.avi")
 
-    # Initialize the SVM modelles
-    clf_s = initialize_SVM_model("Hog/SVM_HOG_Model_s.pkl")
-    clf_m = initialize_SVM_model("Hog/SVM_HOG_Model_m.pkl")
-    clf_b = initialize_SVM_model("Hog/SVM_HOG_Model_b.pkl")
+    # Initialize the SVM models
+    print("Initializing SVM model...")
+    clf = initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", width = 64, height = 128)
+
 
     while cap.isOpened():
         start_time = time.time()
@@ -269,7 +276,7 @@ def simulate_racecar_driving(target_frame_rate=30):
         ret, frame = cap.read()
         if ret:
             # Detect cones in the frame
-            cone_locations = HOG_predict(frame, clf_s, clf_m, clf_b, False)
+            cone_locations = HOG_predict(frame, clf, False)
 
             # Draw the cones on the frame
             for cone_location in cone_locations:
@@ -297,12 +304,15 @@ def simulate_racecar_driving(target_frame_rate=30):
                 time.sleep(desired_frame_time - elapsed_time)
         else:
             break
+        
+        if elapsed_time > 0:
+            frame_rate = int(1 / elapsed_time)
+            print("Frame rate: " + str(frame_rate))
 
     # Release the video capture object
     cap.release()
     cv2.destroyAllWindows()
     
-
 # Main logic
 def main():
     # Initialize the SVM model
@@ -335,3 +345,4 @@ def main():
 
 if __name__ == "__main__":
     simulate_racecar_driving()
+    print("Done")
