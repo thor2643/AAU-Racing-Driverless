@@ -72,11 +72,10 @@ def remove_all_but_concrete( img1):
 
     if largest_blob is not None:
         # 5. Get the bounding box of the largest blob
-        _, y, _, _ = cv2.boundingRect(largest_blob)
+        _ , y, _, _ = cv2.boundingRect(largest_blob)
 
         # 6. Crop the original image using the bounding box
-        #concrete_area = img[y:y+h, x:x+w]
-        
+        #concrete_area = img[y-5:y+5+h, x:x+w]
         
         return y
 
@@ -222,11 +221,13 @@ def template_matching(frame, y):
     #resizing the frame to make cumputations faster
     frame_copy = frame[y : 480 , 0 : 640]
     
-    template = [yellow_template, yellow_template1, yellow_template2, yellow_template3, blue_template ,blue_template1, blue_template2, blue_template3]
+    #yellow_template blue_template3
+    
+    template = [yellow_template1, yellow_template2, yellow_template3, blue_template ,blue_template1, blue_template2]
     
     for i, template in enumerate(template):
         
-        if i == 4:
+        if i == 3:
             c = 1
             new_cone = True
             threshold = 0.65
@@ -273,14 +274,14 @@ def load():
     #load video from folder:
     video_folder = "Data_AccelerationTrack//1//Color.avi"
     cap = cv2.VideoCapture(video_folder)
-    L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("Images//FrameRemoved")
+    L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("Images//Color_transfer")
     time1 = 0
     
     while True:
         # Read the frames of the video
         _ , frame = cap.read()    
-        if  time1 == 0 or time.time() - time1 > 0.2:  
-            time1 =time.time()
+        
+        if  time1 == 0 or time.time() - time1 > 0.1:  
             #process the frames:
             frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
             frame_yellow = color_enhancement(frame)
@@ -290,10 +291,11 @@ def load():
             frame_blue = find_blue(frame_blue)
             frame = cv2.add(frame_yellow, frame_blue)
             frame, cone_cordinates = template_matching(frame, y)
+            time1 =time.time()
             
             #show the frames:
             cv2.imshow("Video", frame)
-        
+    
         
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
