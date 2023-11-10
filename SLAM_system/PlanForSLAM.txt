@@ -1,0 +1,14 @@
+Plan for SLAM
+
+
+SLAM loop:
+    # Process LiDAR data (e.g., feature extraction, point cloud registration)
+    # Update robot pose based on LiDAR odometry
+
+    # Process IMU data (e.g., integrate accelerations to estimate velocity)
+    # Update robot pose based on IMU integration
+
+    # Combine LiDAR and IMU information (e.g., Kalman filter or graph optimization)
+    # Update the global map
+
+    # Visualization 
