@@ -6,15 +6,32 @@ from sklearn.metrics import accuracy_score
 import os
 import pickle
 import time
+from tqdm import tqdm
 
 hog = cv2.HOGDescriptor()
 
+# Other tools
+def SaveConesFromSlidingWindow(prediction, window):
+    print(prediction)
+
+    # Display the current window
+    cv2.imshow("Window", window)
+
+    # Wait for a key press to make a decision
+    key = cv2.waitKey(0) & 0xFF
+
+    if key == ord('s'):
+        # Save the positive window to a file if 's' is pressed
+        cv2.imwrite("Hog/Cones" + str(time.time()) + ".png", window)
+    elif key == 27:  # Check for ESC key (ASCII value 27)
+        return True  # Break out of the loop if ESC is pressed
+
+#HOG feature extractor
 def resize(img, width = 64, height = 128):
     if img.shape[0] != height or img.shape[1] != width:
         img = cv2.resize(img, (width, height))
     return img
 
-#HOG feature extractor
 def calculate_HOG_features_custom(img, width = 64, height = 128):
     # To handle division by zero errors. This is a very small number, so it will not affect the result much
         epsilon = 1e-7
@@ -105,57 +122,50 @@ def HOG_feature_extractor(input_image, useCustomHOG=True, target_width=64, targe
     else:
         return feature_vector
 
-def HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, useCustomHOG = True, width = 64, height = 128):
-    # Process blue cones, yellow cones, and negative samples folders
-    positive_features = []  # To store blue and yellow cone features
-    negative_features = []  # To store negative samples features
-
+def CalculateFeatureFromFolder(SamplesFolder,useCustomHOG,width,height):
+    features = []
     correcly_loaded = 0
     total_load_attempts = 0
 
-    # Load features from BlueConesFolder and YellowConesFolder
-    for idx, folder_path in enumerate([BlueConesFolder, YellowConesFolder]):
-        filenames = os.listdir(folder_path)
-        for idy, filename in enumerate(filenames):
+    # Iterate through all subfolders and files
+    for root, dirs, files in os.walk(SamplesFolder):
+        for filename in tqdm(files, desc="Processing files", unit="file"):
+            file_path = os.path.join(root, filename)
             
-            target_image = cv2.imread(os.path.join(folder_path, filename))
+            # Skip non-image files
+            if not file_path.lower().endswith(('.png', '.jpg', '.jpeg')):
+                continue
+
+            # Read the image
+            target_image = cv2.imread(file_path)
+
+            # Extract HOG features
             feature_vector = HOG_feature_extractor(target_image, useCustomHOG, width, height)
 
-            # Check if we are looking at the first file in the folder
+            # Check if the feature vector is valid
             if not (np.isnan(feature_vector).any()) and (feature_vector.shape[0] == 3780):
-                if idx == 0 and idy == 0:
-                    positive_features = feature_vector
+                if features is None:
+                    features = [feature_vector]
                 else:
                     correcly_loaded += 1
-                    positive_features = np.column_stack((positive_features, feature_vector))
+                    features.append(feature_vector)
+
             total_load_attempts += 1
 
     # Check how many features are loaded correctly out of the total number of features
-    print("Number of features loaded correctly: " + str(correcly_loaded) + " out of " + str(total_load_attempts) + " features" )
-    print(positive_features.shape)
+    print("Number of features loaded correctly: " + str(correcly_loaded) + "/" + str(total_load_attempts))
 
-    correcly_loaded = 0
-    total_load_attempts = 0
+    # Convert the features list to a numpy array
+    features = np.array(features).T
+    print(features.shape)
 
-    for idx, folder_path in enumerate([NegativeSamplesFolder]):
-        filenames = os.listdir(folder_path)
-        for idy, filename in enumerate(filenames):
+    return features
 
-            target_image = cv2.imread(os.path.join(folder_path, filename))
-            feature_vector = HOG_feature_extractor(target_image, useCustomHOG, width, height)
-
-            # Check if we are looking at the first file in the folder
-            if not (np.isnan(feature_vector).any()) and (feature_vector.shape[0] == 3780):
-                if idx == 0 and idy == 0:
-                    negative_features = feature_vector
-                else:
-                    correcly_loaded += 1
-                    negative_features = np.column_stack((negative_features, feature_vector))
-            total_load_attempts += 1
-
-    # Check how many features are loaded correctly out of the total number of features
-    print("Number of features loaded correctly: " + str(correcly_loaded) + " out of " + str(total_load_attempts) + " features" )
-    print(positive_features.shape)
+def HogFeatureFolderExtractor(PositiveSamplesFolder, NegativeSamplesFolder, useCustomHOG = True, width = 64, height = 128):
+   
+    # Process the positive and negative samples folders
+    positive_features = CalculateFeatureFromFolder(PositiveSamplesFolder, useCustomHOG, width, height)
+    negative_features = CalculateFeatureFromFolder(NegativeSamplesFolder, useCustomHOG, width, height)
 
     # Transpose the feature vectors
     positive_features = positive_features.T
@@ -168,8 +178,8 @@ def HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSample
     return positive_features, positive_labels, negative_features, negative_labels
 
 # SVM classifier and prediction
-def train_SVM_model(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, kernel='linear', C=1):
-    positive_features, positive_labels, negative_features, negative_labels, = HogFeatureFolderExtractor(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, False, width= 64, height = 128)
+def train_SVM_model(PositiveSamplesFolder, NegativeSamplesFolder, kernel='linear', C=1):
+    positive_features, positive_labels, negative_features, negative_labels, = HogFeatureFolderExtractor(PositiveSamplesFolder, NegativeSamplesFolder, False, width= 64, height = 128)
 
     # Combine all features and labels
     x = np.vstack((positive_features, negative_features))
@@ -179,7 +189,7 @@ def train_SVM_model(BlueConesFolder, YellowConesFolder, NegativeSamplesFolder, k
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
     # Train an SVM classifier - Kernel is the kernel type, C is the penalty parameter of the error term
-    clf = svm.SVC(kernel=kernel, C=C)
+    clf = svm.SVC(kernel=kernel, C=C, probability=True)
     clf.fit(X_train, y_train)
 
     # Calculate the accuracy of the classifier
@@ -209,6 +219,12 @@ def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128)
             if prediction == 1:
                 # Save the locations of the cones in an array
                 cone_locations.append((x, y))
+            
+
+            # break_loop = SaveConesFromSlidingWindow(prediction, window)
+            # if break_loop:
+            #     break
+
     return cone_locations
 
 def HOG_predict(query_image, clf, custom_Hog = False):
@@ -257,7 +273,7 @@ def HOG_predict(query_image, clf, custom_Hog = False):
 
     return cone_locations
 
-def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", blueconesfolder = "Hog/Cones/Blue", yellowconesfolder = "Hog/Cones/Yellow", negativesamplesfolder = "Hog/Cones/NegativeSamples", kernel='rbf', C=1, width = 64, height = 128):
+def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFolder = "Hog/Cones_Positive", NegativeSamplesFolder = "Hog/Cones_Negative", kernel='rbf', C=1):
     # First we check if we have a model trained already, if not we should train one
     print("Checking if a model is already trained...")
     if os.path.isfile(modelpath):
@@ -268,7 +284,7 @@ def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", blueconesfolder = 
     else:
         print("No model was found. Training a new model...")
         # Train the model
-        clf = train_SVM_model(blueconesfolder, yellowconesfolder, negativesamplesfolder,kernel='poly', C = 1)
+        clf = train_SVM_model(PositiveSamplesFolder, NegativeSamplesFolder, kernel=kernel, C = C)
 
         # Save the model
         with open(modelpath, "wb") as f:
@@ -284,7 +300,7 @@ def simulate_racecar_driving(target_frame_rate=30):
 
     # Initialize the SVM models
     print("Initializing SVM model...")
-    clf = initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", width = 64, height = 128)
+    clf = initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl")
 
 
     while cap.isOpened():
