@@ -67,7 +67,7 @@ while (i < frames_to_capture) :
         cv2.imshow("Depth", depth_image_ocv)
         cv2.waitKey(wait_time)
 
-#
+
 # Close the camera
 zed.close()
 #return 0

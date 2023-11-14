@@ -9,3 +9,8 @@ ZED_Photos/
 
 #test file (dont work, but usfull to have)
 Recording_ZED.py
+
+#Remove ground from pointcloud
+Depth_remove_ground/
+
+From_ZED_to_2D/

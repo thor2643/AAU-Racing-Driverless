@@ -43,6 +43,7 @@ arr_1_values_modsat=1/arr_1_values_list[:]
 LS=LinearRegression()
 model=LS.fit(arr_1_indexes,arr_1_values_modsat)
 
+print(f"model.coef_: {model.coef_}, model.intercept_: {model.intercept_}")
 print(model.predict([[1,1]]))
 print(arr_2[1,1])
 print(1/model.predict([[1,1]]))
@@ -74,7 +75,7 @@ ax.plot_surface(x_surf,y_surf,fittedY.reshape(x_surf.shape), color='b', alpha=0.
 ax.set_xlabel('Y_cor')
 ax.set_ylabel('X_cor')
 ax.set_zlabel('Depth')
-#plt.show()
+plt.show()
 
 def map_arr(arr,from_no,to_no):
     map_arr=interp1d([np.amin(arr),np.amax(arr)],[from_no,to_no])
