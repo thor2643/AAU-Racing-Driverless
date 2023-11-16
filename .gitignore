@@ -1,3 +1,4 @@
 *.json
 .vscode/
-FullDataset 
+Hog/Cones_Positive
+Hog/Cones_Negative
