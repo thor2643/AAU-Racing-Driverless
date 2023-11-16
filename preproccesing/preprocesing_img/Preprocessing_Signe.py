@@ -281,7 +281,7 @@ def load():
         # Read the frames of the video
         _ , frame = cap.read()    
         
-        if  time1 == 0 or time.time() - time1 > 0.1:  
+        if  time1 == 0 or time.time() - time1 > 0.18:  
             #process the frames:
             frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
             frame_yellow = color_enhancement(frame)
