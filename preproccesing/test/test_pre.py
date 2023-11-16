@@ -72,12 +72,11 @@ def remove_all_but_concrete( img1):
 
     if largest_blob is not None:
         # 5. Get the bounding box of the largest blob
-        _ , y, _, _ = cv2.boundingRect(largest_blob)
-
-        # 6. Crop the original image using the bounding box
-        #concrete_area = img[y-5:y+5+h, x:x+w]
-        
-        return y
+        _ , y, w, h = cv2.boundingRect(largest_blob)
+        if  w * h > 10000:
+            return y
+        else:
+            return 0
 
     # 7. If no concrete is found, return None
     return None
@@ -127,7 +126,7 @@ def color_enhancement(processed_img):
     # Creating an object of Color class
     im3 = ImageEnhance.Color(im)
     # this factor controls the enhancement factor. 0 gives a black and white image. 1 gives the original image
-    enhanced_image = im3.enhance(2)
+    enhanced_image = im3.enhance(8)
     # Convert the enhanced image to an OpenCV format
     temp_img = cv2.cvtColor(np.array(enhanced_image), cv2.COLOR_RGB2BGR)
     return temp_img
@@ -167,14 +166,14 @@ def find_blue(processed_img):
 
 def template_matching(frame, y):
     #reading all the templates
-    yellow_template1 = cv2.imread("preproccesing//yellow_template.jpg")
-    blue_template = cv2.imread("preproccesing//blue_template.jpg")
-    #yellow_template = cv2.imread("preproccesing//yellow_template1.jpg")
-    blue_template1 = cv2.imread("preproccesing//blue_template1.jpg")
-    yellow_template2 = cv2.imread("preproccesing//yellow_template2.jpg")
-    blue_template2 = cv2.imread("preproccesing//blue_template2.jpg")
-    yellow_template3 = cv2.imread("preproccesing//yellow_template3.jpg")
-    #blue_template3 = cv2.imread("preproccesing//blue_template3.jpg")
+    #yellow_template = cv2.imread("preproccesing//preprocesing_img//yellow_template.jpg")
+    blue_template = cv2.imread("preproccesing//preprocesing_img//blue_template.jpg")
+    yellow_template1 = cv2.imread("preproccesing//preprocesing_img//yellow_template1.jpg")
+    blue_template1 = cv2.imread("preproccesing//preprocesing_img//blue_template1.jpg")
+    yellow_template2 = cv2.imread("preproccesing//preprocesing_img//yellow_template2.jpg")
+    blue_template2 = cv2.imread("preproccesing//preprocesing_img//blue_template2.jpg")
+    yellow_template3 = cv2.imread("preproccesing//preprocesing_img//yellow_template3.jpg")
+    #blue_template3 = cv2.imread("preproccesing//preprocesing_img//blue_template3.jpg")
     
     #Variables
     c = 0
@@ -234,37 +233,38 @@ def template_matching(frame, y):
         else:
             color = (0, 255, 255)
         for pt in filtered_cones[p]:
-            cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
+            if y != 0:
+                cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
+            else:
+                cv2.rectangle(frame, (pt[0], pt[1]), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1]), color, 2)
             next_img += 1
     
     return frame, filtered_cones
 
 def load():
     L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("Images//Color_transfer")
-    time1 = 0
     
-    for frame in os.listdir("preproccesing//test//FullDataset//labels//train"):
-        if  time1 == 0 or time.time() - time1 > 0.1:  
-            #process the frames:
-            frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
-            frame_yellow = color_enhancement(frame)
-            y = remove_all_but_concrete(frame)
-            frame_blue = frame_yellow.copy()
-            frame_yellow = find_yellow(frame_yellow)
-            frame_blue = find_blue(frame_blue)
-            frame = cv2.add(frame_yellow, frame_blue)
-            frame, cone_cordinates = template_matching(frame, y)
-            time1 =time.time()
-            
-            #show the frames:
-            cv2.imshow("Video", frame)
-    
+    for frame in os.listdir("preproccesing//test//FullDataset//images//train"):
+        print(frame)
+        frame = cv2.imread(os.path.join("preproccesing//test//FullDataset//images//train", frame))
+        print(frame.shape)
         
+        #process the frames:
+        frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
+        frame_yellow = color_enhancement(frame)
+        y = remove_all_but_concrete(frame)
+        frame_blue = frame_yellow.copy()
+        frame_yellow = find_yellow(frame_yellow)
+        frame_blue = find_blue(frame_blue)
+        frame = cv2.add(frame_yellow, frame_blue)
+        frame, cone_cordinates = template_matching(frame, y)
+        
+        #show the frames:
+        cv2.imshow("Video", frame)
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    cap.release()
     cv2.destroyAllWindows()
 
 

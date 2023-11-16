@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageEnhance
 import time
+import matplotlib.pyplot as plt
 
 def finds_LAB_reference_from_folder(folder):
     numb_images = 0
@@ -198,19 +199,19 @@ def create_templates():
 
 def template_matching(frame, y):
     #reading all the templates
-    yellow_template1 = cv2.imread("preproccesing//yellow_template.jpg")
-    blue_template = cv2.imread("preproccesing//blue_template.jpg")
-    yellow_template = cv2.imread("preproccesing//yellow_template1.jpg")
-    blue_template1 = cv2.imread("preproccesing//blue_template1.jpg")
-    yellow_template2 = cv2.imread("preproccesing//yellow_template2.jpg")
-    blue_template2 = cv2.imread("preproccesing//blue_template2.jpg")
-    yellow_template3 = cv2.imread("preproccesing//yellow_template3.jpg")
-    blue_template3 = cv2.imread("preproccesing//blue_template3.jpg")
+    #yellow_template = cv2.imread("preproccesing//preprocesing_img//yellow_template.jpg")
+    blue_template = cv2.imread("preproccesing//preprocesing_img//blue_template.jpg")
+    yellow_template1 = cv2.imread("preproccesing//preprocesing_img//yellow_template1.jpg")
+    blue_template1 = cv2.imread("preproccesing//preprocesing_img//blue_template1.jpg")
+    yellow_template2 = cv2.imread("preproccesing//preprocesing_img//yellow_template2.jpg")
+    blue_template2 = cv2.imread("preproccesing//preprocesing_img//blue_template2.jpg")
+    yellow_template3 = cv2.imread("preproccesing//preprocesing_img//yellow_template3.jpg")
+    #blue_template3 = cv2.imread("preproccesing//preprocesing_img//blue_template3.jpg")
     
     #Variables
     c = 0
     cone_number = [(0),(0)]
-    allowed_distance=30   #pixels
+    allowed_distance=40   #pixels
     new_cone = True
     distance=0
     filtered_cones= [[], []]
@@ -249,9 +250,136 @@ def template_matching(frame, y):
                     
             if new_cone == True:
                 cone_number[c] += 1
+                filtered_cones[c].append(list(pt))    
                 width_height[c].append([w, h])
-                filtered_cones[c].append(pt)    
     
+    return frame, filtered_cones, width_height
+
+def find_center_cords(cone_cordinates, width_height):
+    #running through all the cone coordinates and finding the center coordinates
+    centercordinates = [[],[]]
+    for p in range (0, 2):
+        next_img = 0
+        for pt in cone_cordinates[p]:
+            centercordinates[p].append([pt[0] + width_height[p][next_img][0] / 2, pt[1] + width_height[p][next_img][1] / 2])
+            next_img += 1
+    return centercordinates
+
+def find_polynomial_coefficients(points, degree):
+    x = np.array([point[0] for point in points])
+    y = np.array([point[1] for point in points])
+
+    # Fit a polynomial of the specified degree
+    coefficients = np.polyfit(x, y, degree)
+
+    return coefficients
+
+def plot_polynomial(coefficients, x_range, label):
+    y_range = np.polyval(coefficients, x_range)
+    plt.plot(x_range, y_range, label=label)
+
+def draw_line_between_cones(title, coordinates, x_range, y_range,):
+    # Extract x and y values
+    x_values = [coord[0] for coord in coordinates]
+    y_values = [coord[1] for coord in coordinates]
+
+    # Fit a quadratic polynomial
+    degree = 1  # Adjust the degree as needed
+    poly_coefficients = find_polynomial_coefficients(coordinates, degree)
+
+    # Plot the original points
+    plt.scatter(x_values, y_values, label='Data Points')
+    x_interval = np.linspace(0, x_range[1], 5000)
+
+    # Plot the polynomial curve
+    plot_polynomial(poly_coefficients, x_interval, f'Quadratic Regression (Degree {degree})')
+
+    
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.legend()
+
+    # Set x and y range if specified
+    if x_range is not None:
+        plt.xlim(min(x_range), max(x_range))
+    if y_range is not None:
+        plt.ylim(min(y_range), max(y_range))
+
+    plt.title(title)
+    # Invert the y-axis
+    plt.gca().invert_yaxis()
+    plt.show()
+
+#intersection over union
+def compute_iou(old_cone_coordinates, old_width_height, cone_coordinates, width_height):
+    box_old = [old_cone_coordinates[0], old_cone_coordinates[1], old_cone_coordinates[0] + old_width_height[0], old_cone_coordinates[1] + old_width_height[1]]
+    box_new = [cone_coordinates[0], cone_coordinates[1], cone_coordinates[0] + width_height[0], cone_coordinates[1] + width_height[1]]
+    
+    # Calculate intersection area
+    intersection_width = min(box_old[2], box_new[2]) - max(box_old[0], box_new[0])
+    intersection_height = min(box_old[3], box_new[3]) - max(box_old[1], box_new[1])
+    
+    if intersection_width <= 0 or intersection_height <= 0:
+        return 0
+    
+    intersection_area = intersection_width * intersection_height
+
+    # Calculate union area
+    box1_area = (box_old[2] - box_old[0]) * (box_old[3] - box_old[1])
+    box2_area = (box_new[2] - box_new[0]) * (box_new[3] - box_new[1])
+    
+    union_area = box1_area + box2_area - intersection_area
+
+    # Calculate IoU
+    iou = intersection_area / union_area
+    return iou
+
+def check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_width_height):
+    for q in range(0, 2):
+        for p in range (0, len(old_cone_coordinates[q])):
+            old_cone_coordinates[q][p][2] += 1
+    final_cone_coordinates = old_cone_coordinates.copy()
+            
+    new_width_height = old_width_height.copy()
+    for i in range(0, 2):
+        for k in range(0, len(cone_coordinates[i])):
+            new_cone = True
+            for j in range(0, len(old_cone_coordinates[i])):
+                iou = compute_iou(old_cone_coordinates[i][j], old_width_height[i][j], cone_coordinates[i][k], width_height[i][k])
+                if iou > 0.5:
+                    new_cone = False
+                    final_cone_coordinates[i][j] = cone_coordinates[i][k]
+                    final_cone_coordinates[i][j][2] = 0
+                    new_width_height[i][j] = width_height[i][k]
+                    
+            if new_cone == True:
+                final_cone_coordinates[i].append(cone_coordinates[i][k])
+                new_width_height[i].append(width_height[i][k])        
+    old_cone_coordinates, old_width_height = final_cone_coordinates.copy(), new_width_height.copy()
+    
+    #removing cones that have not been found for x frame(s)
+    temp_coordinates = old_cone_coordinates.copy()
+    for i in range(0, 2):
+        for j in range(len(temp_coordinates[i]) - 1, -1, -1):
+            if temp_coordinates[i][j][2] > 3:  # X: this is the place to chance the number of frames a cone can be missing
+                del old_cone_coordinates[i][j]
+                del old_width_height[i][j]
+    
+                
+    return old_cone_coordinates, old_width_height
+
+def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std):
+    frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
+    frame_yellow = color_enhancement(frame)
+    y = remove_all_but_concrete(frame)
+    frame_blue = frame_yellow.copy()
+    frame_yellow = find_yellow(frame_yellow)
+    frame_blue = find_blue(frame_blue)
+    frame = cv2.add(frame_yellow, frame_blue)            
+    frame, cone_coordinates, width_height = template_matching(frame, y)
+    return frame, cone_coordinates, width_height, y
+
+def draw_cones(frame, cone_coordinates, width_height, y):
     #drawing the rectangles around the cones      
     for p in range (0, 2):
         next_img = 0
@@ -259,39 +387,42 @@ def template_matching(frame, y):
             color = (255, 0, 0)
         else:
             color = (0, 255, 255)
-        for pt in filtered_cones[p]:
+        for pt in cone_coordinates[p]:
             cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
             next_img += 1
-    
-    return frame, filtered_cones
 
 def load():
     #load video from folder:
     video_folder = "Data_AccelerationTrack//1//Color.avi"
     cap = cv2.VideoCapture(video_folder)
     L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("Images//Color_transfer")
-    time1 = 0
+    frame_number = 0
     
     while True:
+        frame_number += 1
         # Read the frames of the video
-        _ , frame = cap.read()    
+        ret , frame = cap.read()    
         
-        if  time1 == 0 or time.time() - time1 > 0.18:  
-            #process the frames:
-            frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
-            frame_yellow = color_enhancement(frame)
-            y = remove_all_but_concrete(frame)
-            frame_blue = frame_yellow.copy()
-            frame_yellow = find_yellow(frame_yellow)
-            frame_blue = find_blue(frame_blue)
-            frame = cv2.add(frame_yellow, frame_blue)
-            frame, cone_cordinates = template_matching(frame, y)
-            time1 =time.time()
-            
-            #show the frames:
-            cv2.imshow("Video", frame)
+        if ret == False:
+            break
+        
+        frame, cone_coordinates, width_height, y = preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
+        #makes sure that there are a counting entry for each cone
+        for i in range(0, 2):
+                for j in range(0, len(cone_coordinates[i])):
+                    cone_coordinates[i][j].append(0)
+                    
+        if frame_number == 1:
+            old_cone_coordinates, old_width_height = cone_coordinates.copy(), width_height.copy()
+        else:
+            old_cone_coordinates, old_width_height = check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_width_height)        
+        
+        draw_cones(frame, old_cone_coordinates, old_width_height, y)
+        #show the frames:
+        cv2.imshow("Video", frame)
+        frame_number += 1
     
-        
+
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -299,5 +430,11 @@ def load():
     cap.release()
     cv2.destroyAllWindows()
 
-
 load()
+
+
+
+        #size_x_frame = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        #centercordinates = find_center_cords(cone_cordinates, width_height)
+        #draw_line_between_cones("Yellow cones", centercordinates[0], x_range=[0, 640], y_range=[0, 480])
+        #draw_line_between_cones("Blue cones", centercordinates[1], x_range=[0, 640], y_range=[0, 480])
