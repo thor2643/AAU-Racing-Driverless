@@ -220,13 +220,10 @@ def template_matching(frame, y):
     
     #resizing the frame to make cumputations faster
     frame_copy = frame[y : 480 , 0 : 640]
-    
     #yellow_template blue_template3
-    
     template = [yellow_template1, yellow_template2, yellow_template3, blue_template ,blue_template1, blue_template2]
     
     for i, template in enumerate(template):
-        
         if i == 3:
             c = 1
             new_cone = True
@@ -235,8 +232,6 @@ def template_matching(frame, y):
         w, h = template.shape[1], template.shape[0]
         res = cv2.matchTemplate(frame_copy,template,cv2.TM_CCOEFF_NORMED)
         loc = np.where( res >= threshold)
-        
-
         
         #going throug each found location and drawing a rectangle around it,
         # if it is not too close to another cone
