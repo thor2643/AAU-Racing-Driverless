@@ -1,2 +1,4 @@
 *.json
 .vscode/
+Hog/Cones_Positive
+Hog/Cones_Negative

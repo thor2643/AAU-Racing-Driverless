@@ -26,6 +26,31 @@ def SaveConesFromSlidingWindow(prediction, window):
     elif key == 27:  # Check for ESC key (ASCII value 27)
         return True  # Break out of the loop if ESC is pressed
 
+def filter_close_points(cone_locations, distance_threshold):
+    filtered_cone_locations = []
+    ignore_flags = []
+
+    for i, current_point in enumerate(cone_locations):
+        if i in ignore_flags:
+            continue  # Skip points marked for ignoring
+
+        keep_point = True
+
+        for j, other_point in enumerate(cone_locations):
+            if i != j and j not in ignore_flags:  # Skip comparing the point with itself and with already ignored points
+                distance = np.linalg.norm(np.array(current_point) - np.array(other_point))
+
+                # Check if the distance is below the threshold
+                if distance < distance_threshold:
+                    keep_point = False
+                    ignore_flags.append(j) # Mark the other point for ignoring
+                    break 
+
+        if keep_point:
+            filtered_cone_locations.append(current_point)
+
+    return filtered_cone_locations
+
 #HOG feature extractor
 def resize(img, width = 64, height = 128):
     if img.shape[0] != height or img.shape[1] != width:
@@ -214,18 +239,59 @@ def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128)
 
             # Use the trained SVM to classify the window
             prediction = clf.predict([window_features])
+            #print(prediction)
 
             # If the window is classified as a cone (1), mark it
             if prediction == 1:
                 # Save the locations of the cones in an array
                 cone_locations.append((x, y))
-            
-
-            # break_loop = SaveConesFromSlidingWindow(prediction, window)
-            # if break_loop:
-            #     break
 
     return cone_locations
+
+def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 128), step_size=16, HighestID=0):
+    Check_kernel = [(-1, 1), (0, 1), (1, 1),
+                    (-1, 0), (0, 0), (1, 0),
+                    (-1, -1), (0, -1), (1, -1)]
+    cone_locations = []
+
+    # Turn around the coordinates for the location
+    location = (location[1], location[0])
+
+    # Iterate through the kernel
+    for i in range(len(Check_kernel)):
+        x_offset = step_size * Check_kernel[i][0]
+        y_offset = step_size * Check_kernel[i][1]
+
+        # Define the region of interest (ROI)
+        roi = whole_image[location[0] + x_offset:location[0] + window_size[1] + x_offset,
+                  location[1] + y_offset:location[1] + window_size[0] + y_offset]
+
+        # Iterate through the ROI using sliding window technique
+        for x in range(0, roi.shape[0] - window_size[1] + 1, step_size):
+            for y in range(0, roi.shape[1] - window_size[0] + 1, step_size):
+                window = roi[x:x + window_size[1], y:y + window_size[0]]
+
+                # Print window dimensions and check if it's not empty
+                if window.size == 0:
+                    print("Error: Window is empty!")
+                    continue
+
+                # Resize the window to 128x64
+                window = resize(window, 64, 128)
+
+                # Compute HOG features for the current window
+                window_features = HOG_feature_extractor(window, custom_Hog, 64, 128)
+
+                # Use the trained SVM to classify the window
+                prediction = clf.predict([window_features])
+
+                # If the window is classified as a cone (1), mark it
+                if prediction == 1:
+                    # Save the locations of the cones in an array
+                    cone_locations.append((HighestID +1, 0, (location[0] + x + x_offset, location[1] + y + y_offset)))
+                    HighestID += 1
+
+    return cone_locations   
 
 def HOG_predict(query_image, clf, custom_Hog = False):
     # Iterate through the image using a sliding window
@@ -252,24 +318,8 @@ def HOG_predict(query_image, clf, custom_Hog = False):
             # Append to list with cones, while transforming the coordinates back to the original image
             cone_locations.append((locations[i][0], locations[i][1] + query_image.shape[0]//2))
 
-   # Create a new list to store cone locations without close duplicates
-    new_cone_locations = []
-
-    for i in range(len(cone_locations)):
-        is_close = False  # Flag to check if the current cone is close to any other
-
-        for j in range(len(cone_locations)):
-            if i != j:
-                if abs(cone_locations[i][0] - cone_locations[j][0]) < 32 or abs(cone_locations[i][1] - cone_locations[j][1]) < 32:
-                    if cone_locations[i][1] < cone_locations[j][1]:
-                        is_close = True
-                        break  # No need to check further, as the current cone will be removed
-
-        if not is_close:
-            new_cone_locations.append(cone_locations[i])
-
-    # Replace the original cone_locations list with the filtered list
-    cone_locations = new_cone_locations
+    # Filter out close points
+    cone_locations = filter_close_points(cone_locations, 32)
 
     return cone_locations
 
@@ -293,6 +343,58 @@ def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFol
 
     return clf
 
+# Object tracking
+def update_cones(KnownCones, ConelocationsCurrent, DistThreshold=32, timeout_threshold=2, HighestID=0):
+    updated_cones = []
+
+    if KnownCones and ConelocationsCurrent:
+        for i in range(len(KnownCones)):
+            cone_updated = False
+
+            if len(KnownCones[i]) >= 3:
+                for j in range(len(ConelocationsCurrent)):
+                    if ConelocationsCurrent[j]:
+                        distance = np.linalg.norm(np.array(KnownCones[i][2]) - np.array(ConelocationsCurrent[j]))
+
+                        if distance <= DistThreshold:
+                            KnownCones[i] = (KnownCones[i][0], KnownCones[i][1] + 1, ConelocationsCurrent[j])
+                            updated_cones.append(KnownCones[i])
+                            cone_updated = True
+
+                if not cone_updated:
+                    KnownCones[i] = (KnownCones[i][0], KnownCones[i][1] + 1, KnownCones[i][2])
+                    if KnownCones[i][1] <= timeout_threshold:
+                        updated_cones.append(KnownCones[i])
+
+    for cone_location in ConelocationsCurrent:
+        if cone_location:
+            cone_exists = any(np.array_equal(np.array(cone_location), np.array(cone[2])) for cone in KnownCones if len(cone) >= 3)
+            if not cone_exists:
+                HighestID += 1
+                new_cone = (HighestID, 0, cone_location)
+                updated_cones.append(new_cone)
+
+    return updated_cones, HighestID
+
+def track_cones1(KnownCones, ConelocationsCurrent, clf, image, DistThreshold=32, timeout_threshold=3, HighestID=0):
+    print()
+    print("KnownCones1:", KnownCones)
+
+    Spot_cones = []
+    for cone in KnownCones:
+        if len(cone) >= 3:
+            _, _, cone_location = cone
+            Spot_cones.append(spot_check(image, clf, cone_location, False, (64, 128), 16, HighestID))
+
+    # Extend the list of found cones, with the spotcheck of cones
+    ConelocationsCurrent.extend(Spot_cones)
+
+    # Update cones based on the current frame
+    updated_cones, HighestID = update_cones(KnownCones, ConelocationsCurrent, DistThreshold, timeout_threshold, HighestID)
+
+    return updated_cones, HighestID
+
+
 # Simulate racecar driving based on time
 def simulate_racecar_driving(target_frame_rate=30):
     # Load video
@@ -300,10 +402,12 @@ def simulate_racecar_driving(target_frame_rate=30):
 
     # Initialize the SVM models
     print("Initializing SVM model...")
-    clf = initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl")
-
-
+    clf = initialize_SVM_model(modelpath="Hog/SVM_HOG_Model.pkl")
+    KnownCones = []
+    l = 0
+    HighestID = 0
     while cap.isOpened():
+        l += 1
         start_time = time.time()
 
         ret, frame = cap.read()
@@ -311,9 +415,21 @@ def simulate_racecar_driving(target_frame_rate=30):
             # Detect cones in the frame
             cone_locations = HOG_predict(frame, clf, False)
 
+            # If KnownCones is empty or not initialized correctly, initialize it as an empty list
+            if not KnownCones or not isinstance(KnownCones, list):
+                KnownCones = []
+
+            # Track the cones
+            KnownCones, HighestID = track_cones1(KnownCones, cone_locations, DistThreshold=64, clf=clf, image=frame, HighestID = HighestID)
+
             # Draw the cones on the frame
-            for cone_location in cone_locations:
-                cv2.rectangle(frame, cone_location, (cone_location[0] + 32, cone_location[1] + 64), (0, 255, 0), 2)
+            for cone in KnownCones:
+                # Ensure that the cone tuple is not empty before unpacking
+                if cone:
+                    cone_id, _, cone_location = cone
+                    cv2.putText(frame, str(cone_id), (cone_location[0], cone_location[1]),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    cv2.rectangle(frame, cone_location, (cone_location[0] + 32, cone_location[1] + 64), (0, 255, 0), 2)
 
             # Display the frame
             cv2.imshow("Frame", frame)
@@ -337,19 +453,52 @@ def simulate_racecar_driving(target_frame_rate=30):
                 time.sleep(desired_frame_time - elapsed_time)
         else:
             break
-        
+
         if elapsed_time > 0:
             frame_rate = int(1 / elapsed_time)
-            print("Frame rate: " + str(frame_rate))
+            # print("Frame rate: " + str(frame_rate))
+
+        print("Frame: " + str(l))
 
     # Release the video capture object
     cap.release()
     cv2.destroyAllWindows()
-    
+
 # Main logic
 def main():
     # Initialize the SVM model
-    clf = initialize_SVM_model()
+    clf = initialize_SVM_model(C=0.001)
+
+    # Load video
+    cap = cv2.VideoCapture("Data_AccelerationTrack/1/Color.avi")
+
+    # go trough the frames
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            # Detect cones in the frame
+            cone_locations = HOG_predict(frame, clf, False)
+
+            # Draw the cones on the frame
+            for cone_location in cone_locations:
+                cv2.rectangle(frame, cone_location, (cone_location[0] + 32, cone_location[1] + 64), (0, 255, 0), 2)
+
+            # Display the frame
+            cv2.imshow("Frame", frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        else:
+            break
+
+    # Release the video capture object
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+# Main logic
+def main():
+    # Initialize the SVM model
+    clf = initialize_SVM_model(C = 0.001)
 
     # Load video
     cap = cv2.VideoCapture("Data_AccelerationTrack/1/Color.avi")
@@ -378,4 +527,5 @@ def main():
 
 if __name__ == "__main__":
     simulate_racecar_driving()
+    #main()
     print("Done")
