@@ -13,4 +13,4 @@ Recording_ZED.py
 #Remove ground from pointcloud
 Depth_remove_ground/
 
-From_ZED_to_2D/
+
