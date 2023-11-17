@@ -10,7 +10,7 @@ cap = cv2.VideoCapture(video_path)
 
 while True:
     ret, frame = cap.read()
-    if not ret:
+    if not ret: 
         break
 
     # Perform object detection
