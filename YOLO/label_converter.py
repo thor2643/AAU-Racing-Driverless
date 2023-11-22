@@ -2,10 +2,14 @@ import os
 import yaml
 
 def convert_supervisely_to_yolo(supervisely_path, yolo_path, class_names, num_of_files = -1, remove_frame=True):
+    if num_of_files == -1:
+        num_of_files = len(os.listdir(supervisely_path))
+
     for filename in os.listdir(supervisely_path)[:num_of_files]:
         if filename.endswith(".json"):
             with open(os.path.join(supervisely_path, filename), 'r') as f:
                 data = yaml.load(f, Loader=yaml.FullLoader)
+                
                 with open(os.path.join(yolo_path, os.path.splitext(os.path.splitext(filename)[0])[0] + ".txt"), 'w') as out_file:
                     img_height = data['size']['height']
                     img_width = data['size']['width']
@@ -32,11 +36,11 @@ def convert_supervisely_to_yolo(supervisely_path, yolo_path, class_names, num_of
                         classID = class_names.index(obj['classTitle'])
                         out_file.write(f"{classID} {x_center} {y_center} {width_norm} {height_norm}\n")
 
-path = "YOLO\\fsoco_sample\\fsoco_sample\\bounding_boxes"
-output_path = "YOLO\\data\\labels\\train"
+path = "Images\OwnData\YOLO_Images\SuperviselyLabels"
+output_path = "Images\OwnData\YOLO_Images\YOLOLabels"
 
 class_names = ["yellow_cone", "blue_cone", "orange_cone", "large_orange_cone", "unknown_cone"]
 
 # Example usage:
-#convert_supervisely_to_yolo(path, output_path, class_names)
+convert_supervisely_to_yolo(path, output_path, class_names, remove_frame=False)
 

@@ -54,16 +54,21 @@ def horizontal_flip(img_path, YOLO_label_path, img_output_path, label_output_pat
     return img_flipped
 
 
-img_input_folder_path = "YOLO\\data\\images\\train"#\\amz_00000.jpg"
-img_output_folder_path = "YOLO\\Test\\Images"#\\amz_00000_flipped.jpg"
+img_input_folder_path = "Images\OwnData\YOLO_Images\Images"#\\amz_00000.jpg"
+img_output_folder_path = "Images\OwnData\YOLO_Images\Images"#\\amz_00000_flipped.jpg"
 
-label_input_folder_path = "YOLO\\data\\labels\\train"#\\amz_00000.txt"
-label_output_folder_path = "YOLO\\Test\\Labels"#\\label.txt"
+label_input_folder_path = "Images\OwnData\YOLO_Images\YOLOLabels"#\\amz_00000.txt"
+label_output_folder_path = "Images\OwnData\YOLO_Images\YOLOLabels"#\\label.txt"
+
+number_of_files = -1 #-1 for all
 
 #horizontal_flip(img_input_path, label_input_path, img_output_path, label_output_path)
 
 
-for img, label in zip(os.listdir(img_input_folder_path)[:10], os.listdir(label_input_folder_path)[:10]):
+if number_of_files == -1:
+    number_of_files = len(os.listdir(img_input_folder_path))
+    
+for img, label in zip(os.listdir(img_input_folder_path)[:number_of_files], os.listdir(label_input_folder_path)[:number_of_files]):
 
     img_input_path = img_input_folder_path + "\\" + img
     label_input_path = label_input_folder_path + "\\" + label
@@ -79,16 +84,3 @@ for img, label in zip(os.listdir(img_input_folder_path)[:10], os.listdir(label_i
     SV_scaling(img_input_path, label_input_path, img_output_path, label_output_path) 
 
 
-
-#img = cv2.imread("Images\FrameRemoved\Image_2.jpg")
-"""
-while True:
-    img_augmented = SV_scaling(img)
-    img_flipped = horizontal_flip(img)
-
-    cv2.imshow("Image", img)
-    cv2.imshow("Image Augmented", img_augmented)
-    cv2.imshow("Image Flipped", img_flipped)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
-"""
