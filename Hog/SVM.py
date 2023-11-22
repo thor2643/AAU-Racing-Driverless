@@ -38,14 +38,13 @@ def filter_close_points(cone_locations, distance_threshold):
 
         for j, other_point in enumerate(cone_locations):
             if i != j and j not in ignore_flags:  # Skip comparing the point with itself and with already ignored points
-                distance = np.linalg.norm(np.array(current_point) - np.array(other_point))
+                distance = np.linalg.norm(np.array(current_point[2]) - np.array(other_point[2]))
 
                 # Check if the distance is below the threshold
                 if distance < distance_threshold:
                     keep_point = False
                     ignore_flags.append(j) # Mark the other point for ignoring
                     break 
-
         if keep_point:
             filtered_cone_locations.append(current_point)
 
@@ -237,15 +236,39 @@ def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128)
             # Compute HOG features for the current window
             window_features = HOG_feature_extractor(window, custom_Hog, 64, 128)
 
-            # Use the trained SVM to classify the window
-            prediction = clf.predict([window_features])
-            #print(prediction)
+            c = Predict(clf, window_features, x ,y)
 
-            # If the window is classified as a cone (1), mark it
-            if prediction == 1:
-                # Save the locations of the cones in an array
-                cone_locations.append((x, y))
+            if c:
+                cone_locations.extend(c)
 
+    return cone_locations
+
+def Predict(clf, window, x, y):
+    # Check if the received input is valid
+    if window is None:
+         raise TypeError("Window is None")
+   # Check if x and y are integers
+    if not isinstance(x, int) or not isinstance(y, int):
+        raise TypeError("x and y must be integers")
+
+    cone_locations = []
+
+    # Use the trained SVM to classify the window
+    prediction_y = clf[1].predict([window])[0]
+    prediction_b = clf[0].predict([window])[0]
+
+    # If the window is classified as a cone (1), mark it
+    if prediction_y == 1 and prediction_b == 1:
+        # Save the locations of the cones in an array
+        cone_locations.append(((x, y), "blue"))
+        #print("Blue cone found")
+    elif prediction_b == 1:
+        #print("Blue cone found")
+        cone_locations.append(((x, y), "blue"))       
+    elif prediction_y == 1:
+        #print("Yellow cone found")
+        cone_locations.append(((x, y), "yellow"))
+    
     return cone_locations
 
 def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 128), step_size=16, HighestID=0):
@@ -257,7 +280,6 @@ def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 12
     # Turn around the coordinates for the location
     location = (location[1], location[0])
 
-    # Iterate through the kernel
     for i in range(len(Check_kernel)):
         x_offset = step_size * Check_kernel[i][0]
         y_offset = step_size * Check_kernel[i][1]
@@ -282,18 +304,20 @@ def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 12
                 # Compute HOG features for the current window
                 window_features = HOG_feature_extractor(window, custom_Hog, 64, 128)
 
-                # Use the trained SVM to classify the window
-                prediction = clf.predict([window_features])
-
-                # If the window is classified as a cone (1), mark it
-                if prediction == 1:
+                cone_location = Predict(clf, window_features, x, y)
+                if cone_location and x + x_offset >= 0 and y + y_offset >= 0:
+                    # Ensure that the list has the correct structure ((x, y), color)
+                    if len(cone_location[0]) != 2:
+                        print("Error: Cone location is not correct")
+                        continue
+                    
                     # Save the locations of the cones in an array
-                    cone_locations.append((HighestID +1, 0, (location[0] + x + x_offset, location[1] + y + y_offset)))
+                    cone_locations.append((HighestID, 0, (x + x_offset, y + y_offset), cone_location[0][1]))
                     HighestID += 1
 
-    return cone_locations   
-
-def HOG_predict(query_image, clf, custom_Hog = False):
+    return cone_locations, HighestID
+ 
+def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor = 1):
     # Iterate through the image using a sliding window
     cone_locations = []
     top_middle_cone_locations = []
@@ -302,28 +326,31 @@ def HOG_predict(query_image, clf, custom_Hog = False):
 
     Bias = 32
 
-    #Split the image into three new images.
-    top_middle = query_image[query_image.shape[0]//2:query_image.shape[0]//2 + Bias, 0:query_image.shape[1]]    # 32 x 16
-    middle = query_image[query_image.shape[0]//2:query_image.shape[0]//2 + Bias * 3, 0:query_image.shape[1]]       # 64 x 32
-    bottom = query_image[query_image.shape[0]//2:query_image.shape[0], 0:query_image.shape[1]]          # 128 x 64
+    # Split the image into three new images.
+    top_middle = query_image[query_image.shape[0] // 2:query_image.shape[0] // 2 + Bias, 0:query_image.shape[1]]  # 32 x 16
+    middle = query_image[query_image.shape[0] // 2:query_image.shape[0] // 2 + Bias * 3, 0:query_image.shape[1]]  # 64 x 32
+    bottom = query_image[query_image.shape[0] // 2:query_image.shape[0], 0:query_image.shape[1]]  # 128 x 64
 
     # Detect cones in the images
-    top_middle_cone_locations = sliding_window(top_middle, clf, custom_Hog, (16, 32), 8)
-    middle_cone_locations = sliding_window(middle, clf, custom_Hog, (32, 64), 16)
-    bottom_cone_locations = sliding_window(bottom, clf, custom_Hog, (64, 128), 32)
+    top_middle_cone_locations = sliding_window(top_middle, clf, custom_Hog, (16, 32), 8//step_factor)
+    middle_cone_locations = sliding_window(middle, clf, custom_Hog, (32, 64), 16//step_factor)
+    bottom_cone_locations = sliding_window(bottom, clf, custom_Hog, (64, 128), 32//step_factor)
 
-    # Transform the locations back to the original image    
+    # Transform the locations back to the original image
     for locations in [top_middle_cone_locations, middle_cone_locations, bottom_cone_locations]:
-        for i in range(len(locations)):
-            # Append to list with cones, while transforming the coordinates back to the original image
-            cone_locations.append((locations[i][0], locations[i][1] + query_image.shape[0]//2))
+        for location in locations:
+            # Extract coordinate and color label from the tuple
+            (x, y), color = location
+
+            # Append to the list with cones, while transforming the coordinates back to the original image
+            cone_locations.append((HighestID,0,(x, y + query_image.shape[0] // 2), color))
 
     # Filter out close points
     cone_locations = filter_close_points(cone_locations, 32)
 
     return cone_locations
 
-def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFolder = "Hog/Cones_Positive", NegativeSamplesFolder = "Hog/Cones_Negative", kernel='rbf', C=1):
+def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFolder_y = "Hog/Cones_Positive/Centered/Yellow", PositiveSamplesFolder_b = "Hog/Cones_Positive/Centered/Blue", NegativeSamplesFolder = "Hog/Cones_Negative", kernel='rbf', C=1):
     # First we check if we have a model trained already, if not we should train one
     print("Checking if a model is already trained...")
     if os.path.isfile(modelpath):
@@ -334,7 +361,11 @@ def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFol
     else:
         print("No model was found. Training a new model...")
         # Train the model
-        clf = train_SVM_model(PositiveSamplesFolder, NegativeSamplesFolder, kernel=kernel, C = C)
+        print("Training the model for the blue cones...")
+        clf_b = train_SVM_model(PositiveSamplesFolder_b, NegativeSamplesFolder, kernel=kernel, C = C)
+        print("Training the model for the yellow cones...")
+        clf_y = train_SVM_model(PositiveSamplesFolder_y, NegativeSamplesFolder, kernel=kernel, C = C)
+        clf = [clf_b, clf_y]
 
         # Save the model
         with open(modelpath, "wb") as f:
@@ -343,54 +374,87 @@ def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFol
 
     return clf
 
+
 # Object tracking
-def update_cones(KnownCones, ConelocationsCurrent, DistThreshold=32, timeout_threshold=2, HighestID=0):
+def update_cones(KnownCones, ConelocationsCurrent, DistThreshold=64, timeout_threshold=15, HighestID=0):
     updated_cones = []
 
+    if not isinstance(KnownCones, list):
+        KnownCones = []
+
     if KnownCones and ConelocationsCurrent:
-        for i in range(len(KnownCones)):
+        for i, known_cone in enumerate(KnownCones):
             cone_updated = False
-
-            if len(KnownCones[i]) >= 3:
-                for j in range(len(ConelocationsCurrent)):
-                    if ConelocationsCurrent[j]:
-                        distance = np.linalg.norm(np.array(KnownCones[i][2]) - np.array(ConelocationsCurrent[j]))
-
+             
+            if isinstance(known_cone, tuple) and len(known_cone) >= 3:
+                for cone_id, update_variable, (x, y), color in ConelocationsCurrent:
+                    if cone_id is not None and (x, y):
+                        distance = np.linalg.norm(np.array(known_cone[2][:2]) - np.array((x, y)))
                         if distance <= DistThreshold:
-                            KnownCones[i] = (KnownCones[i][0], KnownCones[i][1] + 1, ConelocationsCurrent[j])
+                            KnownCones[i] = (KnownCones[i][0], 0, (x, y), color)
                             updated_cones.append(KnownCones[i])
                             cone_updated = True
+                            break  # Exit the loop after updating a cone
 
                 if not cone_updated:
-                    KnownCones[i] = (KnownCones[i][0], KnownCones[i][1] + 1, KnownCones[i][2])
+                    KnownCones[i] = (KnownCones[i][0], KnownCones[i][1] + 1, KnownCones[i][2], KnownCones[i][3])
                     if KnownCones[i][1] <= timeout_threshold:
                         updated_cones.append(KnownCones[i])
+    elif KnownCones:
+        for i, known_cone in enumerate(KnownCones):
+            # Decrement the timeout counter or take other appropriate action
+            KnownCones[i] = (KnownCones[i][0], KnownCones[i][1] + 1, KnownCones[i][2], KnownCones[i][3])
 
-    for cone_location in ConelocationsCurrent:
-        if cone_location:
-            cone_exists = any(np.array_equal(np.array(cone_location), np.array(cone[2])) for cone in KnownCones if len(cone) >= 3)
-            if not cone_exists:
+            # Check if the timeout counter is still within acceptable limits
+            if KnownCones[i][1] <= timeout_threshold:
+                updated_cones.append(KnownCones[i])
+
+    for cone_id, update_variable, (x, y), color in ConelocationsCurrent:
+        if cone_id is not None and (x, y):
+            # If KnownCones is empty or not initialized correctly, initialize it as an empty list
+            if not KnownCones or not isinstance(KnownCones, list):
+                KnownCones = []
+
+            # Ensure cone_location has at least one element before attempting to access its elements
+            # Check if there are any cones in KnownCones
+            if KnownCones:
+                # Check if a similar cone already exists in KnownCones
+                cone_exists = any(
+                    np.linalg.norm(np.array((x, y)) - np.array(cone[2][:2])) <= DistThreshold
+                    for cone in KnownCones if isinstance(cone, tuple) and len(cone) >= 3
+                )
+
+                # If a similar cone doesn't exist, add a new cone to updated_cones
+                if not cone_exists:
+                    HighestID += 1
+                    new_cone = (HighestID, 0, (x, y), color)
+                    updated_cones.append(new_cone)
+            else:
+                # KnownCones is empty, so add a new cone to updated_cones
                 HighestID += 1
-                new_cone = (HighestID, 0, cone_location[0], cone_location[1])
+                new_cone = (HighestID, 0, (x, y), color)
                 updated_cones.append(new_cone)
 
     return updated_cones, HighestID
 
 def track_cones1(KnownCones, ConelocationsCurrent, clf, image, DistThreshold=32, timeout_threshold=3, HighestID=0):
-    print()
-    print("KnownCones1:", KnownCones)
-
     Spot_cones = []
     for cone in KnownCones:
         if len(cone) >= 3:
-            _, _, cone_location = cone
-            Spot_cones.append(spot_check(image, clf, cone_location, False, (64, 128), 16, HighestID))
+            _, _, cone_location, color = cone
+            cones_to_add, HighestID = spot_check(image, clf, cone_location, False, (64, 128), 16, HighestID)
+            if cones_to_add:
+                Spot_cones.append(cone)
 
     # Extend the list of found cones, with the spotcheck of cones
-    ConelocationsCurrent.extend(Spot_cones)
+    if Spot_cones:
+        ConelocationsCurrent.extend(Spot_cones)
 
+    print("Known cones before: " + str(KnownCones))
+    print("Found cones: " + str(ConelocationsCurrent))
     # Update cones based on the current frame
     updated_cones, HighestID = update_cones(KnownCones, ConelocationsCurrent, DistThreshold, timeout_threshold, HighestID)
+    print("Known cones after: " + str(updated_cones))
 
     return updated_cones, HighestID
 
@@ -413,7 +477,7 @@ def simulate_racecar_driving(target_frame_rate=30):
         ret, frame = cap.read()
         if ret:
             # Detect cones in the frame
-            cone_locations = HOG_predict(frame, clf, False)
+            cone_locations = HOG_predict(frame, clf, False, HighestID=HighestID)
 
             # If KnownCones is empty or not initialized correctly, initialize it as an empty list
             if not KnownCones or not isinstance(KnownCones, list):
@@ -426,10 +490,20 @@ def simulate_racecar_driving(target_frame_rate=30):
             for cone in KnownCones:
                 # Ensure that the cone tuple is not empty before unpacking
                 if cone:
-                    cone_id, _, cone_location = cone
+                    cone_id, _, cone_location, color = cone
+
+                    if color == "blue":
+                        color = (255, 0, 0)
+                    else:
+                        color = (0, 255, 255)
+
+                    #Check if the cone_location is a list or a tuple
+                    if isinstance(cone_location[0], tuple):
+                        cone_location = cone_location[0]
+
                     cv2.putText(frame, str(cone_id), (cone_location[0], cone_location[1]),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-                    cv2.rectangle(frame, cone_location, (cone_location[0] + 32, cone_location[1] + 64), (0, 255, 0), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                    cv2.rectangle(frame, cone_location, (cone_location[0] + 32, cone_location[1] + 64), color, 2)
 
             # Display the frame
             cv2.imshow("Frame", frame)
@@ -466,66 +540,64 @@ def simulate_racecar_driving(target_frame_rate=30):
 
 # Main logic
 def main():
-    # Initialize the SVM model
-    clf = initialize_SVM_model(C=0.001)
-
     # Load video
     cap = cv2.VideoCapture("Data_AccelerationTrack/1/Color.avi")
 
-    # go trough the frames
+    # Initialize the SVM models
+    print("Initializing SVM model...")
+    clf = initialize_SVM_model(modelpath="Hog/SVM_HOG_Model.pkl")
+    KnownCones = []
+    l = 0
+    HighestID = 0
     while cap.isOpened():
+        l += 1
+        print("frame" + str(l))
+
         ret, frame = cap.read()
         if ret:
             # Detect cones in the frame
-            cone_locations = HOG_predict(frame, clf, False)
+            cone_locations = HOG_predict(frame, clf, False, HighestID=HighestID)
+
+            # If KnownCones is empty or not initialized correctly, initialize it as an empty list
+            if not KnownCones or not isinstance(KnownCones, list):
+                KnownCones = []
+
+            # Track the cones
+            KnownCones, HighestID = track_cones1(KnownCones, cone_locations, DistThreshold=64, clf=clf, image=frame, HighestID = HighestID)
 
             # Draw the cones on the frame
-            for cone_location in cone_locations:
-                cv2.rectangle(frame, cone_location, (cone_location[0] + 32, cone_location[1] + 64), (0, 255, 0), 2)
+            for cone in KnownCones:
+                # Ensure that the cone tuple is not empty before unpacking
+                if cone:
+                    cone_id, _, cone_location, color = cone
+
+                    if color == "blue":
+                        color = (255, 0, 0)
+                    else:
+                        color = (0, 255, 255)
+
+                    #Check if the cone_location is a list or a tuple
+                    if isinstance(cone_location[0], tuple):
+                        cone_location = cone_location[0]
+
+                    cv2.putText(frame, str(cone_id), (cone_location[0], cone_location[1]),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                    cv2.rectangle(frame, cone_location, (cone_location[0] + 32, cone_location[1] + 64), color, 2)
 
             # Display the frame
             cv2.imshow("Frame", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+
         else:
             break
 
-    # Release the video capture object
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-# Main logic
-def main():
-    # Initialize the SVM model
-    clf = initialize_SVM_model(C = 0.001)
-
-    # Load video
-    cap = cv2.VideoCapture("Data_AccelerationTrack/3/Color.avi")
-
-    # go trough the frames
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            # Detect cones in the frame
-            cone_locations = HOG_predict(frame, clf, False)
-
-            # Draw the cones on the frame
-            for cone_location in cone_locations:
-                cv2.rectangle(frame, cone_location, (cone_location[0] + 32, cone_location[1] + 64), (0, 255, 0), 2)
-
-            # Display the frame
-            cv2.imshow("Frame", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        else:
-            break
 
     # Release the video capture object
     cap.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    simulate_racecar_driving()
-    #main()
+    #simulate_racecar_driving()
+    main()
     print("Done")
