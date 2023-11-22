@@ -51,7 +51,7 @@ def save_slices_from_ann(supervisely_path, img_path, output_path):
                     os.makedirs(output_dir, exist_ok=True)
 
                     # Crop the rectangle from the image with a random offset such that the cones are not centered
-                    cropped_img = random_shift(img, x1, y1, x2, y2, 40)
+                    cropped_img = random_shift(img, x1, y1, x2, y2, 0)
 
                     # Check if the cropped image is not None and not empty before saving
                     if cropped_img is not None and not cropped_img.size == 0:
@@ -62,4 +62,4 @@ def save_slices_from_ann(supervisely_path, img_path, output_path):
                         cv2.imwrite(os.path.join(output_dir, output_filename), cropped_img)
 
 # Example usage:
-save_slices_from_ann("Hog/DATA2/ann", "Hog/DATA2/img", "Hog/Slice")
+save_slices_from_ann("Hog/amz/ann", "Hog/amz/img", "Hog/Slice")
