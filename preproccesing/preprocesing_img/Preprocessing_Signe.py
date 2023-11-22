@@ -47,19 +47,19 @@ def finds_LAB_reference_from_folder(folder):
 
 def remove_all_but_concrete( img1):
     img = img1.copy()
-    lower_yuv = [64, 113, 116]
-    upper_yuv = [100, 138, 153]
-    lower_yuv = np.array(lower_yuv, dtype=np.uint8)  # Convert to NumPy array
-    upper_yuv = np.array(upper_yuv, dtype=np.uint8)  # 1Convert to NumPy array
+    lower_HSV = [0, 0, 55]
+    upper_HSV= [117, 77, 100]
+    lower_HSV = np.array(lower_HSV, dtype=np.uint8)  # Convert to NumPy array
+    upper_HSV = np.array(upper_HSV, dtype=np.uint8)  # 1Convert to NumPy array
 
-    # 1. Convert the image to YUV color space
-    yuv_img = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+    # 1. Convert the image to HSV color space
+    HSV_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # 2. Apply YUV thresholding to find concrete areas
-    yuv_mask = cv2.inRange(yuv_img, lower_yuv, upper_yuv)
-
+    # 2. Apply HSV thresholding to find concrete areas
+    HSV_mask = cv2.inRange(HSV_img, lower_HSV, upper_HSV)
+    
     # 3. Find contours in the binary mask
-    contours, _ = cv2.findContours(yuv_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(HSV_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # 4. Initialize variables to keep track of the largest blob and its bounding box
     largest_blob = None
@@ -124,11 +124,11 @@ def color_enhancement(processed_img):
     # Convert BGR to RGB colorspace
     image_rgb = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
     # Convert to PIL image
-    im = Image.fromarray(image_rgb)
+    img = Image.fromarray(image_rgb)
     # Creating an object of Color class
-    im3 = ImageEnhance.Color(im)
+    img = ImageEnhance.Color(img)
     # this factor controls the enhancement factor. 0 gives a black and white image. 1 gives the original image
-    enhanced_image = im3.enhance(2)
+    enhanced_image = img.enhance(2)
     # Convert the enhanced image to an OpenCV format
     temp_img = cv2.cvtColor(np.array(enhanced_image), cv2.COLOR_RGB2BGR)
     return temp_img
@@ -139,8 +139,8 @@ def find_yellow(processed_img):
     hsv = cv2.cvtColor(processed_img, cv2.COLOR_BGR2HSV)
 
     # Define range of yellow color in HSV
-    lower_yellow = np.array([20, 80, 80])  # 20, 80, 80 to get more yellow but also more noise
-    upper_yellow = np.array([30, 255, 255])
+    lower_yellow = np.array([20, 100, 0]) 
+    upper_yellow = np.array([40, 255, 255])
 
     # Threshold the HSV image to get only yellow colors
     mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
@@ -211,7 +211,7 @@ def template_matching(frame, y):
     #Variables
     c = 0
     cone_number = [(0),(0)]
-    allowed_distance=40   #pixels
+    allowed_distance=50   #pixels
     new_cone = True
     distance=0
     filtered_cones= [[], []]
@@ -371,7 +371,7 @@ def check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_wi
 def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std):
     frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
     frame_yellow = color_enhancement(frame)
-    y = remove_all_but_concrete(frame)
+    y = remove_all_but_concrete(frame_yellow)
     frame_blue = frame_yellow.copy()
     frame_yellow = find_yellow(frame_yellow)
     frame_blue = find_blue(frame_blue)
@@ -387,7 +387,9 @@ def draw_cones(frame, cone_coordinates, width_height, y):
             color = (255, 0, 0)
         else:
             color = (0, 255, 255)
-        for pt in cone_coordinates[p]:
+        for idx, pt in enumerate(cone_coordinates[p]):
+            #put text on the cones´ rectangles
+            cv2.putText(frame, str(idx), (pt[0], pt[1] + y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
             cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
             next_img += 1
 
