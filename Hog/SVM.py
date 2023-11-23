@@ -374,9 +374,8 @@ def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFol
 
     return clf
 
-
 # Object tracking
-def update_cones(KnownCones, ConelocationsCurrent, DistThreshold=64, timeout_threshold=15, HighestID=0):
+def update_cones(KnownCones, ConelocationsCurrent, DistThreshold=64, timeout_threshold=3, HighestID=0):
     updated_cones = []
 
     if not isinstance(KnownCones, list):
@@ -458,7 +457,6 @@ def track_cones1(KnownCones, ConelocationsCurrent, clf, image, DistThreshold=32,
 
     return updated_cones, HighestID
 
-
 # Simulate racecar driving based on time
 def simulate_racecar_driving(target_frame_rate=30):
     # Load video
@@ -538,6 +536,83 @@ def simulate_racecar_driving(target_frame_rate=30):
     cap.release()
     cv2.destroyAllWindows()
 
+def ReadAnnotationFile(img, image_name, Testpath_labels):
+    with open(Testpath_labels + image_name[:-4] + ".txt") as f:
+        Cones = []
+        for line in f:
+            # Split the line into a list
+            line = line.split()
+
+            # Interpret color
+            if line[0] == "0":
+                color = "yellow"
+            elif line[0] == "1":
+                color = "blue"
+            else:
+                # Skip the current line if the color is not recognized
+                continue
+                
+            x = int(float(line[1]) * img.shape[1])
+            y = int(float(line[2]) * img.shape[0])
+            w = int(float(line[3]) * img.shape[1])
+            h = int(float(line[4]) * img.shape[0])
+
+            # Extract the cone location and color from the list
+            Cone_location = [(x,y), (w,h), color]  
+            
+            Cones.append(Cone_location)   
+
+    return Cones 
+
+# Test Logic
+def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test/label/"):
+    # Load the SVM model
+    clf = initialize_SVM_model(modelpath="Hog/SVM_HOG_Model.pkl")
+
+    # the first image in the test folder
+    for images in os.listdir(Testpath_images):
+        # Read the image
+        img = cv2.imread(Testpath_images + images)
+        # Read the Annotation file one line at a time
+        
+        # Read the Annotation file
+        Cones_from_ann = ReadAnnotationFile(img, images, Testpath_labels)
+
+        # Detect cones in the frame
+        cone_locations_HOG = HOG_predict(img, clf, False)
+
+        print(cone_locations_HOG)
+
+        # Check the cones in the image
+
+        # Initiate the state of the cones as the lenght of the cones from the annotation file
+        Close_state = len(Cones_from_ann) * [False]
+
+        for cone in cone_locations_HOG:
+            for i, cone_from_ann in enumerate(Cones_from_ann):
+                # Check if the cone is close to the cone from the annotation file
+                if np.linalg.norm(np.array(cone[2]) - np.array(cone_from_ann[0])) <= 32:
+                    Close_state[i] = True
+
+        # Draw the found cones with blue  
+        for cone in Cones_from_ann:
+            if Close_state[Cones_from_ann.index(cone)]:
+                color = (0, 255, 0)
+            else:
+                color = (0, 0, 255)
+            cv2.rectangle(img, (cone[0][0] - cone[1][0]//2 , cone[0][1] - cone[1][1]//2), (cone[0][0] + cone[1][0]//2, cone[0][1] + cone[1][1]//2), color, 2)         
+
+        # Draw all the cones found 
+        for cone in cone_locations_HOG:
+            cv2.rectangle(img, (cone[2][0] - 32, cone[2][1] - 64), (cone[2][0] + 32, cone[2][1] + 64), (255, 0, 0), 2)
+
+        cv2.imshow("Frame", img)
+        if cv2.waitKey(0) & 0xFF == ord('q'):
+            break
+        
+
+    print("Testing logic...")
+
 # Main logic
 def main():
     # Load video
@@ -599,5 +674,6 @@ def main():
 
 if __name__ == "__main__":
     #simulate_racecar_driving()
-    main()
+    #main()
+    test_logic()
     print("Done")
