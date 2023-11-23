@@ -1,14 +1,33 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import serial
 import time
-import binascii
+import math
 
+
+"""
 class ExtractLidarData:
     def __init__(self) -> None:
         pass
+"""
 
 def setup_lidar(port='COM4', baudrate=115200):
     ser = serial.Serial(port, baudrate, timeout=1)
     time.sleep(2)  # Allow time for the connection to stabilize
+
+    # Initialize the LiDAR sensor using SCIP2.0 protocol
+    #ser.write(b'SCIP2.0\n')
+    
+    time.sleep(1)  # Allow time for initialization
+    data_line = ser.readline().decode() #.strip()
+    print(data_line)
+    data_line = ser.readline().decode() #.strip()
+    print(data_line)
+    data_line = ser.readline().decode() #.strip()
+    print(data_line)
+    data_line = ser.readline().decode() #.strip()
+    print(data_line)
     return ser
 
 def read_lidar_data(ser):
@@ -38,14 +57,15 @@ def close_lidar_connection(ser):
     ser.close()
 
 def read_lidar_data_2(ser):
-    ser.write(b'MS0384038401101\n')  # Start measurement command
+    #ser.write(b'MS0384038401103\n')  # Start measurement command
     #ser.write(b'GS0000001001\n')
     #ser.write(b'QT\n')
     #ser.write(b'BM\n')
     #ser.write(b'SCIP2.0\n')
     #ser.write(b'PP\n')
+    ser.write(b'VV\n')
     #ser.write(b'HS0\n')
-    """
+    
     # Wait for a moment to collect data
     time.sleep(2)
     
@@ -63,54 +83,16 @@ def read_lidar_data_2(ser):
     print(data_line)
     data_line = ser.readline().decode() #.strip()
     print(data_line)
-    """
     
-"""
-def split_into_pairs(input_list):
-    return [input_list[i:i + 2] for i in range(0, len(input_list), 2)]
-
-def convert_from_char_to_hexadecimal(data_string):
-    hex_value = binascii.hexlify(data_string.encode('utf-8'))
-    hex_value = hex_value.decode('utf-8')  # Convert bytes to string
-    return hex_value
-
-def subtract_30_from_hex_values(list_of_hex_values):
-    for i in range(len(list_of_hex_values)):
-        list_of_hex_values[i][0] = hex(int(list_of_hex_values[i][0], 16) - 3)[2:] # remove '0x' from the start
-        list_of_hex_values[i][1] = hex(int(list_of_hex_values[i][1], 16) - 0)[2:] # remove '0x' from the start
-    return list_of_hex_values
-
-def binary_to_decimal(binary_value):
-    return int(binary_value, 2)
-
-def hex_to_six_bit_binary(hex_value):
-    binary_value = bin(int(hex_value, 16))[2:]
-    return binary_value.zfill(6)  # Zero-fill to ensure it's 6 bits
-
-def translate_measurement(measurement):
-    meas_hex_value = convert_from_char_to_hexadecimal(measurement)
-    hex_value_list = list(meas_hex_value)
-    final_list = split_into_pairs(hex_value_list)
-    final_list = subtract_30_from_hex_values(final_list)
-
-    result = []
-    for sublist in final_list:
-        if sublist[0] == '0':
-            result.append(hex_to_six_bit_binary(sublist[1]))
-        else:
-            result.append(hex_to_six_bit_binary(''.join(sublist)))
-
-    concatenated_binary = ''.join(result)
-    decimal_value = binary_to_decimal(concatenated_binary)
-    display_measurement = f'{measurement} = {decimal_value}mm'
-
-    return display_measurement
-
-# Example usage
-result = translate_measurement('m^')
-print(result)
-"""
-
+    data_line = ser.readline().decode() #.strip()
+    print(data_line)
+    data_line = ser.readline().decode() #.strip()
+    print(data_line)
+    data_line = ser.readline().decode() #.strip()
+    print(data_line)
+    data_line = ser.readline().decode() #.strip()
+    print(data_line)
+    
 def hex_to_six_bit_binary(hex_values):
     binary_values = [
         bin(int(''.join(pair), 16))[2:].zfill(6)
@@ -144,8 +126,9 @@ def translate_measurement(measurement_string):
     result = []
     
     hex_values = convert_from_char_to_hexadecimal(measurement_string)
+
     hex_value_pair = subtract_30_from_hex_values([hex_values])
-    
+
     for i in range(0, len(hex_value_pair[0])):
         if hex_value_pair[0][i][0] == '0':
             result.append(hex_to_six_bit_binary(hex_value_pair[0][i][1]))
@@ -164,55 +147,131 @@ def translate_measurement(measurement_string):
 
 def get_angles_from_stepsize(start_step= 0, end_step= 681):
     angles = []
-    for i in range(start_step, end_step):
-        angles.append(i * 0.3515625)
+    for i in range(start_step, end_step+1):
+        angles.append(i * 0.3515625 - 135)
     return angles
 
-def get_measurement_string(start_step= 0, end_step= 681):
-    pass
+def receive_lidar_data(ser, command_string, lines_to_skip=6, lines_to_read=2, measurement_delay=2, timeout=20):
+    # Start measurement
+    ser.write(b'BM\n')
+    time.sleep(2)
+    # Measurement command
+    command = f'{command_string}'.encode('utf-8')
+    ser.write(command)
+    time.sleep(measurement_delay)  # Wait for a moment to collect data
 
-def get_measurement(stepsize):
-    angles = get_angles_from_stepsize()
-    measurement = translate_measurement()
-
-def receive_lidar_data():
-    # Assume this is a function that reads lines from your data source
-    # Replace this with your actual implementation
-    data_source = get_data_source()  # You should replace get_data_source with your actual data source
-
-    # Variables to keep track of the number of lines to skip and the accumulated data
-    lines_to_skip = 5
-    length_data = ""
-
-    # Read lines to skip
+    # Skip specified number of lines
     for _ in range(lines_to_skip):
-        data_source.readline()
+        ser.readline()
 
-    # Read lines and accumulate data until there is no more
+    # Read lines until the start string is encountered
     while True:
-        line = data_source.readline()
+        line = ser.readline().decode()
+        print(f'line: {line}')
+        if command_string in line:
+            break
 
-def main():
-    length_data = ""  # Initialize an empty string to store length data
-    lf_count = 0  # Count the consecutive linefeeds
+    # Read lines and accumulate data until the end condition is met or timeout
+    length_data = ""
+    start_time = time.time()
+    skip_count = 0
+    while True:
+        line = ser.readline().decode()
+        print(f'line: {line}')
 
-    # Continue receiving length data until two consecutive linefeeds are encountered
-    while lf_count < 2:
-        new_data = receive_lidar_data()
+        # Check for lines to skip
+        if skip_count < lines_to_read:
+            skip_count += 1
+            continue
 
-        # Check if the new data is valid (you may need to adjust this condition)
-        if new_data is not None:
-            length_data += new_data
+        # Check for end condition
+        if line.strip() == '':
+            break
 
-            # Check for linefeeds in the new data
-            lf_count += new_data.count('\n')
+        # Remove the last character from each line
+        length_data += line.rstrip('\n')[:-1]
 
-    # Once two consecutive linefeeds are encountered, use your translate function on the accumulated length data
-    result = translate_measurement(length_data)
-    print(result)
+        # Check for timeout
+        if time.time() - start_time > timeout:
+            print("Timeout occurred. Exiting loop.")
+            break
+
+     # Stop measurement
+    ser.write(b'QT\n')
+
+    # Remove the newline/linefeed and Sum character from length_data (SCIP2.0 format: length_data__Sum__\n)
+    length_data = length_data[:-1]
+
+    return length_data
+
+def plot_polar_point_cloud(data):
+    # Extract angles and lengths from the data
+    angles, lengths = zip(*data)
+    
+    # Convert angles to degrees
+    angles_degrees = np.array(angles)
+    print(f'angles: {angles_degrees}')
+    # Create a polar plot
+    plt.polar(np.radians(angles_degrees), lengths, 'bo', label='Data Points')
+
+    # Set the title of the plot
+    plt.title('Polar Point Cloud')
+
+    # Show the plot
+    plt.show()
+
+def plot_3d_polar_point_cloud(data):
+    # Extract angles and lengths from the data
+    angles, lengths = zip(*data)
+    
+    # Convert polar coordinates to Cartesian coordinates
+    x = np.array(lengths) * np.cos(np.array(np.radians(angles)))
+    print(f'x: {x}')
+    y = np.array(lengths) * np.sin(np.array(np.radians(angles)))
+    print(f'y: {y}')
+    z = np.zeros_like(x)  # Assuming z-coordinate is 0, adjust this based on your data
+
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Plot the 3D point cloud
+    ax.scatter(x, y, z, c='b', marker='o', label='Data Points')
+
+    ax.scatter(0, 0, 0, c='r', marker='o', label='LiDAR Center')
+
+    # Set labels for each axis
+    ax.set_xlabel('X-axis')
+    ax.set_ylabel('Y-axis')
+    ax.set_zlabel('Z-axis')
+
+    # Set the title of the plot
+    ax.set_title('3D Point Cloud using Polar Coordinates')
+
+    # Show the plot
+    plt.show()
+
+def main2():
+    ser = setup_lidar()
+    length_data = receive_lidar_data(ser, 'MS0044072501100\n')
+    #print(length_data)
+
+    # Get angles
+    angles = get_angles_from_stepsize(44, 725)
+
+    # Replace this with your actual implementation
+    result = translate_measurement(length_data)    
+    #print(result)
+
+    combined_data = list(zip(angles, result))
+    print(combined_data)
+
+    plot_polar_point_cloud(combined_data)
+    # Close the serial connection
+    ser.close()
 
 if __name__ == "__main__":
-    main()
+    main2()
 
 
 """
@@ -221,8 +280,8 @@ if __name__ == "__main__":
 
     try:
         lidar_data = read_lidar_data_2(lidar_serial)
-        get_length_data_from_lidar(lidar_serial)
-        print("LiDAR Data:", lidar_data)
+        #get_length_data_from_lidar(lidar_serial)
+        #print("LiDAR Data:", lidar_data)
     finally:
         close_lidar_connection(lidar_serial)
 """

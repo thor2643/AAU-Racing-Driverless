@@ -1,0 +1,66 @@
+import socket
+
+class Lidar:
+    def __init__(self, address):
+        self.sensorAddr = address
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(self.sensorAddr)
+        
+    def query(self, queryText):
+        self.sock.sendall((chr(2) + queryText + chr(3)).encode('ascii'))
+        reply = ''
+        while True:
+            data = self.sock.recv(16)
+            reply += data.decode()
+            if chr(3).encode('ascii') in data:
+                break
+        return reply[1:-1] # Removing the STX/ETX control characters.
+    
+    def close(self):
+        self.sock.close()
+        print('Closed connection')
+    
+    def startMeasurement(self):
+        return self.query('sMN LMCstartmeas')
+    
+    def run(self):
+        return self.query('sMN Run')
+    
+    def singleScan(self):
+        return self.query('sRN LMDscandata')
+
+    def startContinuousScan(self):
+        return self.query('sEN LMDscandata 1')
+
+    def readContinuousScan(self, callback):
+        while True:
+            reply = ''
+            while True:
+                data = self.sock.recv(16)
+                reply += data.decode()
+                if chr(3).encode('ascii') in data:
+                    break
+            if not callback(reply[1:-1]): # Removing the STX/ETX control characters.
+                return
+        
+    def stopContinuousScan(self):
+        return self.query('sEN LMDscandata 0')
+    
+
+
+# Example usage:
+lidar_address = ('192.168.0.1', 2111) # IP address, TCP port
+lidar = Lidar(lidar_address)
+
+try:
+    lidar.startMeasurement()
+    lidar.run()
+
+    # Example: Single scan
+    single_scan_data = lidar.singleScan()
+    print("Single Scan Data:", single_scan_data)
+
+
+finally:
+    # Ensure to stop the continuous scan and close the connection
+    lidar.close()
