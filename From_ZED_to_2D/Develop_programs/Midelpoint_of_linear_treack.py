@@ -1,4 +1,5 @@
-import Delanay_Triangles as DT
+#import Delanay_Triangles_copy as DT
+import DelanayTriangles_copy_2 as DT
 import numpy as np
 
 #generate points for linear track with 8 cones

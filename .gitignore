@@ -9,6 +9,8 @@ ZED_Photos/
 
 #test file (dont work, but usfull to have)
 Recording_ZED.py
+Test_moving_points_plt_animation.py
+
 
 #Remove ground from pointcloud
 Depth_remove_ground/
