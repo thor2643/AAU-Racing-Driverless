@@ -2,10 +2,11 @@
 .vscode/
 fsoco_bounding_boxes_train/
 runs/
-YOLO/data
-YOLO/fsoco_sample
+YOLOv8/data
+YOLOv8/fsoco_sample
 Videos/
 Images/OwnData/
-YOLO/Test
+YOLOv8/Test
 Images/ConeSlices
-YOLO/FullDataset
+YOLOv8/FullDataset
+YOLOv5/

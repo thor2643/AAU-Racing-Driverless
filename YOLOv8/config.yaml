@@ -1,0 +1,13 @@
+path: C:\\Users\\Thor9\\OneDrive - Aalborg Universitet\\Dokumenter\\AAU\\Projektarbejde\\AAU-Racing-Driverless\\YOLOv8\\FullDataset
+train: images\train
+val: images\val
+test: images\test
+
+
+#classes
+names:
+  0: yellow_cone
+  1: blue_cone
+  2: orange_cone
+  3: large_orange_cone
+  4: unknown_cone
