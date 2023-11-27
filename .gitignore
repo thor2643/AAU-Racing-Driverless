@@ -16,3 +16,18 @@ Videos/
 Images/OwnData/
 Images/ConeSlices
 YOLOv5/
+
+
+#Exampel code from ZED SDK
+Exampel_code/
+#Recordings
+Recordings_folder/
+ZED_Photos/
+
+#test file (dont work, but usfull to have)
+Recording_ZED.py
+
+#Remove ground from pointcloud
+Depth_remove_ground/
+
+
