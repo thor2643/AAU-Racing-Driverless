@@ -222,7 +222,7 @@ def train_SVM_model(PositiveSamplesFolder, NegativeSamplesFolder, kernel='linear
 
     return clf
 
-def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128), step_size = 16):
+def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128), step_size = 2):
     # Iterate through the image using a sliding window
     cone_locations = []
     for y in range(0, query_image.shape[0] - window_size[1], step_size):
@@ -240,6 +240,7 @@ def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128)
 
             if c:
                 cone_locations.extend(c)
+
 
     return cone_locations
 
@@ -271,7 +272,7 @@ def Predict(clf, window, x, y):
     
     return cone_locations
 
-def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 128), step_size=16, HighestID=0):
+def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 128), step_size=2, HighestID=0):
     Check_kernel = [(-1, 1), (0, 1), (1, 1),
                     (-1, 0), (0, 0), (1, 0),
                     (-1, -1), (0, -1), (1, -1)]
@@ -317,12 +318,8 @@ def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 12
 
     return cone_locations, HighestID
  
-def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor = 1):
-    # Iterate through the image using a sliding window
+def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=8):
     cone_locations = []
-    top_middle_cone_locations = []
-    middle_cone_locations = []
-    bottom_cone_locations = []
 
     Bias = 32
 
@@ -331,23 +328,30 @@ def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor = 1
     middle = query_image[query_image.shape[0] // 2:query_image.shape[0] // 2 + Bias * 3, 0:query_image.shape[1]]  # 64 x 32
     bottom = query_image[query_image.shape[0] // 2:query_image.shape[0], 0:query_image.shape[1]]  # 128 x 64
 
-    # Detect cones in the images
-    top_middle_cone_locations = sliding_window(top_middle, clf, custom_Hog, (16, 32), 8//step_factor)
-    middle_cone_locations = sliding_window(middle, clf, custom_Hog, (32, 64), 16//step_factor)
-    bottom_cone_locations = sliding_window(bottom, clf, custom_Hog, (64, 128), 32//step_factor)
+    # Define window sizes for each iteration
+    window_sizes = [(16, 32), (32, 64), (64, 128)]
 
-    # Transform the locations back to the original image
-    for locations in [top_middle_cone_locations, middle_cone_locations, bottom_cone_locations]:
+    # Iterate through the images and window sizes
+    for s, sub_image in enumerate([top_middle, middle, bottom]):
+        
+        window_size = window_sizes[s]
+
+        step_size = window_size[0] // 2// step_factor
+
+        # Detect cones in the images
+        locations = sliding_window(sub_image, clf, custom_Hog, window_size, step_size)
+      
+        # Transform the locations back to the original image
         for location in locations:
-            # Extract coordinate and color label from the tuple
             (x, y), color = location
 
             # Append to the list with cones, while transforming the coordinates back to the original image
-            cone_locations.append((HighestID,0,(x, y + query_image.shape[0] // 2), color))
+            cone_locations.append((HighestID, 0, (x, y + query_image.shape[0] // 2), color, window_size))
 
     # Filter out close points
     cone_locations = filter_close_points(cone_locations, 32)
 
+    
     return cone_locations
 
 def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFolder_y = "Hog/Cones_Positive/Centered/Yellow", PositiveSamplesFolder_b = "Hog/Cones_Positive/Centered/Blue", NegativeSamplesFolder = "Hog/Cones_Negative", kernel='rbf', C=1):
@@ -374,9 +378,8 @@ def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFol
 
     return clf
 
-
 # Object tracking
-def update_cones(KnownCones, ConelocationsCurrent, DistThreshold=64, timeout_threshold=15, HighestID=0):
+def update_cones(KnownCones, ConelocationsCurrent, DistThreshold=64, timeout_threshold=3, HighestID=0):
     updated_cones = []
 
     if not isinstance(KnownCones, list):
@@ -458,7 +461,6 @@ def track_cones1(KnownCones, ConelocationsCurrent, clf, image, DistThreshold=32,
 
     return updated_cones, HighestID
 
-
 # Simulate racecar driving based on time
 def simulate_racecar_driving(target_frame_rate=30):
     # Load video
@@ -538,6 +540,164 @@ def simulate_racecar_driving(target_frame_rate=30):
     cap.release()
     cv2.destroyAllWindows()
 
+def ReadAnnotationFile(img, image_name, Testpath_labels):
+    with open(Testpath_labels + image_name[:-4] + ".txt") as f:
+        Cones = []
+        for line in f:
+            # Split the line into a list
+            line = line.split()
+
+            # Interpret color
+            if line[0] == "0":
+                color = "yellow"
+            elif line[0] == "1":
+                color = "blue"
+            else:
+                # Skip the current line if the color is not recognized
+                continue
+                
+            x = int(float(line[1]) * img.shape[1])
+            y = int(float(line[2]) * img.shape[0])
+            w = int(float(line[3]) * img.shape[1])
+            h = int(float(line[4]) * img.shape[0])
+
+            # Extract the cone location and color from the list
+            Cone_location = [(x,y), (w,h), color]  
+            
+            Cones.append(Cone_location)   
+
+    return Cones 
+
+def IOU(boxA, boxB):
+    # Extract the coordinates of the boxes
+    x0A, y0A, x1A, y1A = boxA
+    x0B, y0B, x1B, y1B = boxB
+    
+    # Determine the (x, y)-coordinates of the intersection rectangle
+    r_x = max(x0A, x0B)
+    t_y = max(y0A, y0B)
+    l_x = min(x1A, x1B)
+    b_y = min(y1A, y1B)
+
+    # Compute the area of intersection rectangle
+    interArea = max(0, l_x - r_x) * max(0, t_y - b_y )
+    
+    # If the area is non-positive, the boxes don't intersect
+    if interArea <= 0:
+        Iou = 0
+        return Iou
+
+    # Compute the area of both rectangles
+    area_box_a = (x1A - x0A) * (y1A - y0A)
+    area_box_b = (x1B - x0B) * (y1B - y0B)
+
+    # Compute the intersection over union
+    Union = area_box_a + area_box_b - interArea
+
+    # Compute the intersection over union
+    Iou = interArea / Union
+
+    print("Iou: " + str(Iou))
+    return Iou
+
+
+# Test Logic
+def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test/label/"):
+    # Load the SVM model
+    clf = initialize_SVM_model(modelpath="Hog/SVM_HOG_Model.pkl")
+
+    # the first image in the test folder
+    for images in os.listdir(Testpath_images):
+
+        # Read the image
+        img = cv2.imread(Testpath_images + images)
+        # Read the Annotation file one line at a time
+
+        Cones_from_ann = ReadAnnotationFile(img, images, Testpath_labels)
+
+        # Detect cones in the frame
+        cone_locations_HOG = HOG_predict(img, clf, False)
+
+        # Initiate the state of the cones as the lenght of the cones from the annotation file
+        Close_state_ann = len(Cones_from_ann) * [False]
+        close_state_hog = len(cone_locations_HOG) * [False]
+
+        # Run a intersection over union check to see if the cones are close to each other - THIS IS OLD CODE
+        for cone in cone_locations_HOG:
+            close_cones = []
+            for i, cone_from_ann in enumerate(Cones_from_ann):
+                # Extract the coordinates of the boxes
+
+                # Extracting coordinates for cone A
+                x0A = max(cone[2][0] - cone[4][0] // 2, 0)
+                y0A = max(cone[2][1] + cone[4][1] // 2, 0)
+                x1A = max(cone[2][0] + cone[4][0] // 2, 0)
+                y1A = max(cone[2][1] - cone[4][1] // 2, 0)
+
+                # Extracting coordinates for cone B
+                x0B = max(cone_from_ann[0][0] - cone_from_ann[1][0] // 2, 0)
+                y0B = max(cone_from_ann[0][1] + cone_from_ann[1][1] // 2, 0)
+                x1B = max(cone_from_ann[0][0] + cone_from_ann[1][0] // 2, 0)
+                y1B = max(cone_from_ann[0][1] - cone_from_ann[1][1] // 2, 0)
+
+                # Calculate the intersection over union
+                Iou = IOU((x0A, y0A, x1A, y1A), (x0B, y0B, x1B, y1B))
+
+                if Iou >= 0.5:
+                    # If the cones are close to each other, save the index, and the IOU value. Only the closest cone will be saved
+                    close_cones.append((i, Iou))
+
+            # If there are any close cones, save the closest one
+            if close_cones:
+                # Mark hog cone as found
+                close_state_hog[cone_locations_HOG.index(cone)] = True
+
+                # Sort the list of close cones by IOU value
+                close_cones.sort(key=lambda x: x[1], reverse=True)
+
+                # Save the index of the closest cone
+                Close_state_ann[close_cones[0][0]] = True        
+
+        true_positives = close_state_hog.count(True)
+        false_positives = close_state_hog.count(False)
+        false_negatives = Close_state_ann.count(False)
+
+        # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
+        if true_positives + false_positives == 0:
+            Precision = 0
+        elif (true_positives + false_negatives) == 0:
+            Recall = 0
+        else:
+            Recall = true_positives/ (true_positives + false_negatives)
+            Precision = true_positives / (true_positives + false_positives)   
+
+        print(Recall)
+
+        print("Recall: " + str(Recall))
+        print("Precision: " + str(Precision))
+
+        # Draw the found cones with blue  
+        for cone in Cones_from_ann:
+            if Close_state_ann[Cones_from_ann.index(cone)]:
+                color = (0, 255, 0)
+            else:
+                color = (0, 0, 255)
+            cv2.rectangle(img, (cone[0][0] - cone[1][0]//2 , cone[0][1] - cone[1][1]//2), (cone[0][0] + cone[1][0]//2, cone[0][1] + cone[1][1]//2), color, 2)         
+
+        # Draw all the cones found 
+        for cone in cone_locations_HOG:
+            cv2.rectangle(img, (cone[2][0] - cone[4][0]//2, cone[2][1] - cone[4][1]//2), (cone[2][0] + cone[4][0]//2, cone[2][1] + cone[4][1]//2), (255, 0, 0), 2)
+
+        # Display the frame - rezie the image to fit the screen
+        img = cv2.resize(img, (1080, 720))
+
+        cv2.imshow("Frame", img)
+        if cv2.waitKey(0) & 0xFF == ord('q'):
+            break
+        
+
+    print("Testing logic...")
+
 # Main logic
 def main():
     # Load video
@@ -599,5 +759,6 @@ def main():
 
 if __name__ == "__main__":
     #simulate_racecar_driving()
-    main()
+    #main()
+    test_logic()
     print("Done")
