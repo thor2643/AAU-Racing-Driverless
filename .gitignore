@@ -11,15 +11,8 @@ Videos/
 Images/
 fsoco_bounding_boxes_train/
 runs/
-YOLOv5/
-
-fsoco_bounding_boxes_train/
 runs/
-YOLOv8/data
-YOLOv8/fsoco_sample
 Videos/
 Images/OwnData/
-YOLOv8/Test
 Images/ConeSlices
-YOLOv8/FullDataset
 YOLOv5/
