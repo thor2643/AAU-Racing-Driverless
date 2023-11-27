@@ -126,5 +126,5 @@ def main():
     # Plot the points
     plot_points(point_array, point_array_without_color, tri, midpoints)
 
-main()
+#main()
 

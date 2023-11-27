@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import Delaunay
-from BW_Alg import Point, bowyer_watson
+from BW_Alg_copy import Point, bowyer_watson
 from scipy import interpolate
 
-generation_time = 2
+generation_time = 0
 
 def generate_racetrack(num_points, track_length, max_variation, point_spacing):
     direction = 'yellow' 
@@ -279,5 +279,5 @@ def main(triangulation_method = "progresive"):
     else:
         print("Triangulation method not recognized")
 
-main("progresive")
+#main("progresive")
 

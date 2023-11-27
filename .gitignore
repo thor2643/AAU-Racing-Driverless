@@ -16,7 +16,7 @@ Videos/
 Images/OwnData/
 Images/ConeSlices
 YOLOv5/
-
+PathPlannerIgnore/
 
 #Exampel code from ZED SDK
 Exampel_code/
@@ -26,6 +26,8 @@ ZED_Photos/
 
 #test file (dont work, but usfull to have)
 Recording_ZED.py
+Test_moving_points_plt_animation.py
+
 
 #Remove ground from pointcloud
 Depth_remove_ground/
