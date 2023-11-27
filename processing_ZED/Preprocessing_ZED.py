@@ -1,9 +1,7 @@
-#from PIL import Image
 import os
 import cv2
 import numpy as np
 from PIL import Image, ImageEnhance
-import time
 import matplotlib.pyplot as plt
 
 def finds_LAB_reference_from_folder(folder):
@@ -256,61 +254,6 @@ def template_matching(frame, y,):
                 width_height[c].append([w, h])
     
     return frame, filtered_cones, width_height
-
-def find_center_cords(cone_cordinates, width_height):
-    #running through all the cone coordinates and finding the center coordinates
-    centercordinates = [[],[]]
-    for p in range (0, 2):
-        next_img = 0
-        for pt in cone_cordinates[p]:
-            centercordinates[p].append([pt[0] + width_height[p][next_img][0] / 2, pt[1] + width_height[p][next_img][1] / 2])
-            next_img += 1
-    return centercordinates
-
-def find_polynomial_coefficients(points, degree):
-    x = np.array([point[0] for point in points])
-    y = np.array([point[1] for point in points])
-
-    # Fit a polynomial of the specified degree
-    coefficients = np.polyfit(x, y, degree)
-
-    return coefficients
-
-def plot_polynomial(coefficients, x_range, label):
-    y_range = np.polyval(coefficients, x_range)
-    plt.plot(x_range, y_range, label=label)
-
-def draw_line_between_cones(title, coordinates, x_range, y_range,):
-    # Extract x and y values
-    x_values = [coord[0] for coord in coordinates]
-    y_values = [coord[1] for coord in coordinates]
-
-    # Fit a quadratic polynomial
-    degree = 1  # Adjust the degree as needed
-    poly_coefficients = find_polynomial_coefficients(coordinates, degree)
-
-    # Plot the original points
-    plt.scatter(x_values, y_values, label='Data Points')
-    x_interval = np.linspace(0, x_range[1], 5000)
-
-    # Plot the polynomial curve
-    plot_polynomial(poly_coefficients, x_interval, f'Quadratic Regression (Degree {degree})')
-
-    
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.legend()
-
-    # Set x and y range if specified
-    if x_range is not None:
-        plt.xlim(min(x_range), max(x_range))
-    if y_range is not None:
-        plt.ylim(min(y_range), max(y_range))
-
-    plt.title(title)
-    # Invert the y-axis
-    plt.gca().invert_yaxis()
-    plt.show()
 
 #intersection over union
 def compute_iou(old_cone_coordinates, old_width_height, cone_coordinates, width_height):
