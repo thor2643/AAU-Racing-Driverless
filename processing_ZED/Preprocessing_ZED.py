@@ -47,8 +47,8 @@ def finds_LAB_reference_from_folder(folder):
 
 def remove_all_but_concrete( img1):
     img = img1.copy()
-    lower_HSV = [0, 0, 55]
-    upper_HSV= [117, 77, 100]
+    lower_HSV = [0, 0, 72]
+    upper_HSV= [200, 80, 100]
     lower_HSV = np.array(lower_HSV, dtype=np.uint8)  # Convert to NumPy array
     upper_HSV = np.array(upper_HSV, dtype=np.uint8)  # 1Convert to NumPy array
 
@@ -140,8 +140,8 @@ def find_yellow(processed_img):
     hsv = cv2.cvtColor(processed_img, cv2.COLOR_BGR2HSV)
 
     # Define range of yellow color in HSV
-    lower_yellow = np.array([20, 100, 0]) 
-    upper_yellow = np.array([40, 255, 255])
+    lower_yellow = np.array([20, 62, 135]) 
+    upper_yellow = np.array([31, 255, 247])
 
     # Threshold the HSV image to get only yellow colors
     mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
@@ -156,9 +156,8 @@ def find_blue(processed_img):
     hsv = cv2.cvtColor(processed_img, cv2.COLOR_BGR2HSV)
 
     # Define range of blue color in HSV 
-    lower_blue = np.array([100, 50, 50])
+    lower_blue = np.array([100, 100, 100])
     upper_blue = np.array([130, 255, 255])
-    
     
     # Threshold the HSV image to get only blue colors
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
@@ -398,9 +397,9 @@ def draw_cones(frame, cone_coordinates, width_height, y):
 
 def load():
     #load video from folder:
-    video_folder = "preproccesing//ZED_color_video_Run_1.avi" #preproccesing//ZED_color_video_Run_1.avi Data_AccelerationTrack//1//Color.avi
+    video_folder = "processing_ZED//ZED_color_video_Run_1.avi"
     cap = cv2.VideoCapture(video_folder)
-    L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("preproccesing//test//FullDataset//images//vores")  #Images//Color_transfer #
+    L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("processing_ZED//vores")
     frame_number = 0
     
     while True:
@@ -436,9 +435,3 @@ def load():
     cv2.destroyAllWindows()
     
 load()
-  
-
-        #size_x_frame = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-        #centercordinates = find_center_cords(cone_cordinates, width_height)
-        #draw_line_between_cones("Yellow cones", centercordinates[0], x_range=[0, 640], y_range=[0, 480])
-        #draw_line_between_cones("Blue cones", centercordinates[1], x_range=[0, 640], y_range=[0, 480])
