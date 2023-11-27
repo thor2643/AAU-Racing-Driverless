@@ -6,26 +6,30 @@ class ImageProcessor():
     def __init__(self) -> None:
         pass
         
-    def remove_image_frame(self, image):
+    def remove_image_frame(self, image, border_thickness = None):
         dist_to_horizontal_edge = 0
         dist_to_vertical_edge = 0
         height, width = image.shape[:2]
 
-        x = int(width / 2)    
-        for y in range(image.shape[0]):
-            if not image[y, x].all():
-                dist_to_horizontal_edge += 1
-            else:
-                break
+        if border_thickness == None:
+            x = int(width / 2)    
+            for y in range(image.shape[0]):
+                if not image[y, x].all():
+                    dist_to_horizontal_edge += 1
+                else:
+                    break
 
-        y = int(height / 2)
-        for x in range(image.shape[1]):
-            if not image[y, x].all():
-                dist_to_vertical_edge += 1
-            else:
-                break
+            y = int(height / 2)
+            for x in range(image.shape[1]):
+                if not image[y, x].all():
+                    dist_to_vertical_edge += 1
+                else:
+                    break
+        else:
+            dist_to_horizontal_edge = border_thickness
+            dist_to_vertical_edge = border_thickness
         
-        sliced_image = image[dist_to_horizontal_edge:image.shape[0]-dist_to_horizontal_edge, dist_to_vertical_edge:image.shape[1]-dist_to_vertical_edge]
+        sliced_image = image[dist_to_horizontal_edge:-dist_to_horizontal_edge, dist_to_vertical_edge:-dist_to_vertical_edge]
         
         return sliced_image
 

@@ -1,0 +1,49 @@
+output:
+sRA LMDscandata 1 1 FAB4EB 0 0 3B 3D 107904E 1079A49 0 0 1 0 0 5DC 36 0 1 DIST1 3F800000 00000000 FFF92230 2710 10F 
+1D8 1C4 1B1 1C0 1BA 1B9 1CA 1C0 1C2 1CF 1BE 1BC 1B7 1B4 1AB 1B1 1AE 1AF 1A3 19B 19C 19C 198 194 194 193 194 1A0 196 
+194 1A1 1AD 1C1 871 861 84E 838 832 818 812 7FD 7F4 7E4 7DD 7D3 7C2 7B6 7B3 7A9 799 793 78D 78E 782 77E 77D 774 77C 
+77C 774 772 76D 770 771 76D 778 77D 77C 777 782 77F 792 78F 799 7A4 7A8 1F0 220 23B 23A 24A 256 25C 264 26B 272 276 
+280 288 28B 294 29C 2A3 2A9 2AE 2AF 2B1 2BF 2BE 2C1 2C6 2C5 2CA 2C9 2F5 A4E A77 AAA ADA B13 B49 B86 BC4 C0A C51 C9A 
+CEB D39 D96 DED E58 EC3 F45 3F9 3AA 3A4 3A2 391 398 397 399 39D 395 398 3A3 39E 3A1 3A9 3A3 324 310 30E 316 34E 3BB 
+3BA 35F 33A 326 390 3C6 3F9 432 397 32E 309 309 30A 118F 516 51A 52C 4CC 470 41E 419 42B 430 436 442 44F 447 442 431 
+443 10FC 658 665 676 F6D 0 2 35C 2 2 DB5 D63 D0F CC0 C76 C34 BF4 2 10A EF 10C 113 147 147 143 141 142 137 136 136 13D 
+2E8 93C 91D 90A 8E6 8D7 2F 22F 1F8 1A3 18B 178 166 161 150 146 13D 132 132 11E 118 112 10B 10A 109 10F 115 11F 123 0 
+0 1 B not defined 0 0 0
+
+Here is a brief summary of how to decode the output:
+- The output starts with `sRA LMDscandata`, which indicates that this is a response to the request for scan data.
+- The next value is `1`, which indicates the version number of the scan data.
+- The next value is `1`, which indicates the device number of the LIDAR sensor.
+- The next value is `FAB4EB`, which is the serial number of the LIDAR sensor in hexadecimal format.
+- The next value is `0`, which indicates the device status of the LIDAR sensor. A value of `0` means no error.
+- The next value is `0`, which indicates the telegram counter of the LIDAR sensor. This is a number that increments by one for each scan data telegram sent by the LIDAR sensor.
+- The next value is `4039`, which is the scan counter of the LIDAR sensor. This is a number that increments by one for each scan performed by the LIDAR sensor.
+- The next value is `403D`, which is the time since start up of the LIDAR sensor in milliseconds. This is a number that represents the elapsed time since the LIDAR sensor was powered on.
+- The next value is `4221ECA6`, which is the time of transmission of the LIDAR sensor in microseconds. This is a number that represents the exact time when the scan data telegram was sent by the LIDAR sensor.
+- The next value is `4221F7BE`, which is the scan frequency of the LIDAR sensor in 1/100 Hz. This is a number that represents the actual frequency of the scan performed by the LIDAR sensor.
+- The next value is `0`, which is the measurement frequency of the LIDAR sensor in 1/100 Hz. This is a number that represents the actual frequency of the measurement performed by the LIDAR sensor.
+- The next value is `0`, which is the number of encoders of the LIDAR sensor. This is a number that indicates how many encoders are attached to the LIDAR sensor for measuring the angular position of the scan.
+- The next value is `1`, which is the number of 16-bit channels of the LIDAR sensor. This is a number that indicates how many channels of data are included in the scan data telegram.
+- The next value is `0`, which is the measured data content of the LIDAR sensor. This is a number that indicates what kind of data are included in the scan data telegram, such as distance, reflectivity, or remission.
+- The next value is `0`, which is the scaling factor of the LIDAR sensor. This is a number that indicates the scaling factor of the measured data, such as 1 mm or 10 mm.
+- The next value is `5DC`, which is the scaling offset of the LIDAR sensor. This is a number that indicates the offset value of the measured data, such as 0 mm or 100 mm.
+- The next value is `36`, which is the starting angle of the LIDAR sensor in 1/10000 degrees. This is a number that represents the angular position of the first measured value in the scan data telegram.
+- The next value is `0`, which is the angular step width of the LIDAR sensor in 1/10000 degrees. This is a number that represents the angular resolution of the scan performed by the LIDAR sensor.
+- The next value is `1`, which is the number of data of the LIDAR sensor. This is a number that indicates how many measured values are included in the scan data telegram.
+- The next value is `DIST1`, which is the name of the channel of the LIDAR sensor. This is a string that indicates the type of the measured data, such as distance, reflectivity, or remission.
+- The next value is `3F800000`, which is the scaling factor of the channel of the LIDAR sensor. This is a number that indicates the scaling factor of the measured data, such as 1 mm or 10 mm.
+- The next value is `00000000`, which is the scaling offset of the channel of the LIDAR sensor. This is a number that indicates the offset value of the measured data, such as 0 mm or 100 mm.
+- The next value is `FFF92230`, which is the starting angle of the channel of the LIDAR sensor in 1/10000 degrees. This is a number that represents the angular position of the first measured value in the scan data telegram.
+- The next value is `2710`, which is the angular step width of the channel of the LIDAR sensor in 1/10000 degrees. This is a number that represents the angular resolution of the scan performed by the LIDAR sensor.
+- The next value is `10F`, which is the number of data of the channel of the LIDAR sensor. This is a number that indicates how many measured values are included in the scan data telegram.
+- The next values are `200 1FF 20D 227 1E9 1D0 1CB 1C2 1B1 1BB 1B2 1B3 1B4 1A8 1B2 1AE 1B5 1B5 1B3 1C4 82B 812 7FB 7F4 7DD 7D4 7C3 7B4 7AF 7A3 79A 78E 783 77E 776 770 76E 765 765 75B 763 758 22C1 473 44D 41D 3E6 3E5 3E8 461 488 49C 497 490 49A 4C0 0 0 460 478 0 79D 7AB 7AC 7B6 7CB 7D8 7E4 7EC 7FA 814 820 838 84F 862 877 882 8A1 8BD 8D5 8ED 906 927 947 969 982 9A8 9CE 9F6 A24 A52 A7E AB3 AE8 B24 B5E B9A BE0 C25 C70 CBC D0C D6B DC6 530 476 44B 3FA 3ED 3E4 3ED 3FC 418 458 476 470 4A8 4DE 56E 51A 55C 57E 5B2 5B1 587 581 5A8 5A4 5A0 586 37D 34F 342 34E 365 3F8 48F 3F7 404 390 302 2FE 2FE 307 3F8 400 41F 425 445 451 B6A 43B 432 464 AEE 2 109A 10AB 2 6A6 6B4 689 678 673 FC3 F8A E32 2 369 367 2 0 2 2 2 2 2 2 B6A B32 11DF 162 16A 16C 154 143 13F 13B 16A 15E 156 14C 141 147 16D 1C6 896 8C3 8AF 895 8D6 401 400 40C 322 20B 82A 82C 81E 815 806 7F8 135 FF 14C 7D6 7D7 23A 267 249 22E 7C3 189 19F 18D 185 166 7B4 7BA 7BC 7BA 7BD 7C5 7C6 24A 22F 252 235 1FD 1A3 1A0 18A 185 17E 164 168 15E 152 148 143 141 149 141 145 152 156 15E 166 16D 17B 180 188 18D 194 1A1 1E6 970 9AC 9B7 9CD 0 0 0 1 B not defined 0 0 0`, which are the measured data of the channel of the LIDAR sensor. These are numbers that represent the distance values of the scan performed by the LIDAR sensor, in millimeters. Each value corresponds to an angular position, starting from the starting angle and increasing by the angular step width.
+
+I hope this helps you decode the output of the single scan data from the LIDAR sensor. If you have any other questions, please feel free to ask. 😊
+
+Source: Conversation with Bing, 24/11/2023
+(1) TiM TIM551-2050001, Product data sheet - Sick AG. https://cdn.sick.com/media/pdf/5/45/045/dataSheet_TIM551-2050001_1060445_en.pdf.
+(2) Object Tracking with Data using SICK's TiM551 Laser Scanner. https://www.youtube.com/watch?v=3PvKfPF9I7k.
+(3) TiM351 - Failed to init scanner: 2 · Issue #96 · uos/sick_tim. https://github.com/uos/sick_tim/issues/96.
+(4) undefined. http://www.sick.com/us/en-us/home/pro.
+(5) undefined. http://x1.local:40467/.
+(6) undefined. http://x1.local:11311/.

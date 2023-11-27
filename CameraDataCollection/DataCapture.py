@@ -41,8 +41,8 @@ class CameraConfig:
         return pipeline, config
 
 def main():
-    #camera_config = CameraConfig(width=1280, height=720, frame_rate=30, color_output_file="Color.avi")
-    camera_config = CameraConfig(width=848, height=480, frame_rate=60, color_output_file="Color.avi")
+    camera_config = CameraConfig(width=1280, height=720, frame_rate=30, color_output_file="Color12.avi")
+    #camera_config = CameraConfig(width=848, height=480, frame_rate=60, color_output_file="Color7.avi")
 
     # Create the "DepthData" directory if it doesn't exist
     if not os.path.exists("DepthData"):
@@ -87,7 +87,7 @@ def main():
             camera_config.color_out.write(color_image)
 
             # Save depth data as .npy file (with frame number) within a folder
-            np.save("DepthData/depth_{}.npy".format(frame_counter), depth_image)
+            #np.save("DepthData/depth_{}.npy".format(frame_counter), depth_image)
 
             # Show images
             cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
