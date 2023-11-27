@@ -1,3 +1,9 @@
+*
+
+!MainCodeFiles/
+
+
+
 *.json
 .vscode/
 Hog/Cones_Positive
@@ -31,5 +37,6 @@ Test_moving_points_plt_animation.py
 
 #Remove ground from pointcloud
 Depth_remove_ground/
+
 
 
