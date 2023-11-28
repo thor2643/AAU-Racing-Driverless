@@ -152,11 +152,12 @@ car=ax_2.add_patch(Rectangle(car_pos, car_width, car_length, edgecolor='red', fa
 
 start_oriantation=90
 oriantation_=start_oriantation
-pos_=[0,(blue_points_np[0,1]-yellow_points_np[0,1])/2]
+pos_=[0,(blue_points_np[1,1]-yellow_points_np[1,1])/2]
 dt=0.03 #time step in seconds
 stering_angle=0 #degrees
 diff_angle=0
-num_midtpoints_too_close=1
+num_midtpoints_too_close=0
+number_of_midpoints=3
 pause=True
 
 for i in range(150*20):
@@ -180,18 +181,33 @@ for i in range(150*20):
     yellow_points_tran, blue_points_tran=car_view(pos_,oriantation_)
     midpoints=get_middelpoint_with_DT(yellow_points_tran[0:,:], blue_points_tran[0:,:])
     midpoints=midpoints[num_midtpoints_too_close:]
-    mid_points_next=midpoints[:4,:]
+    mid_points_next=midpoints[:number_of_midpoints,:]
+    """
+    j=0
+    k=0
+    for i in range(number_of_midpoints):
+        j=i
+        while True:
+            k+=1
+            if midpoints[i,0]<abs(midpoints[i,1]):
+                mid_points_next[i,:]=midpoints[i,:]
+                j=1
+            if k>number_of_midpoints*1.5:
+                break
+            j+=1
+    """
     angles_x=[]
     
-    gain=3/4
+    gain=4/5
     print(gain)
     sum_gain=0
     for i in range(len(mid_points_next)):
+        
         angles_x.append(get_stering_angle(mid_points_next[i,:]*gain))
         print(f"gain={gain}, i={i}")
         sum_gain+=gain
-        if gain==3/4:
-            gain=1/4
+        if gain==4/5:
+            gain=1/5
         if i<(len(mid_points_next)-2):
             gain=gain/2
     
@@ -202,9 +218,11 @@ for i in range(150*20):
         gain-=1
     #angles_x[:]=get_stering_angle(mid_points_next[:,:])
     stering_angle=np.mean(angles_x)"""
-    #stering_angle=np.sum(angles_x)
-    if np.sum(angles_x)<np.deg2rad(45) and np.sum(angles_x)>np.deg2rad(-45):
-        stering_angle=np.sum(angles_x)
+    stering_angle=np.sum(angles_x)
+    if stering_angle>np.deg2rad(25):
+        stering_angle=np.deg2rad(25)
+    if stering_angle<np.deg2rad(-25):
+        stering_angle=np.deg2rad(-25)
     print(f"angles_x={angles_x}, sum={np.sum(angles_x)}, sum gain={sum_gain}")
     print(f"stering_angle={stering_angle}")
  
