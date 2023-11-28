@@ -47,6 +47,7 @@ class YoloTRT():
         runtime = trt.Runtime(TRT_LOGGER)
         self.engine = runtime.deserialize_cuda_engine(serialized_engine)
         self.batch_size = self.engine.max_batch_size
+   
 
         for binding in self.engine:
             size = trt.volume(self.engine.get_binding_shape(binding)) * self.batch_size
@@ -63,6 +64,11 @@ class YoloTRT():
             else:
                 host_outputs.append(host_mem)
                 cuda_outputs.append(cuda_mem)
+
+        #self.cfx = cuda.Device(0).make_context()
+
+        #custom line maybe delete
+        #self.context = self.engine.create_execution_context()
 
     def PreProcessImg(self, img):
         image_raw = img
@@ -91,11 +97,23 @@ class YoloTRT():
         image = np.ascontiguousarray(image)
         return image, image_raw, h, w
 
-    def Inference(self, img):
+    def Inference(self, img, plot_boxes=True):
+        #Custom line see further down for explanation
+        #self.cfx = cuda.Device(0).make_context()
+
+        #This is my custom line found on the web to overcome an error that might
+        #occur due to bvoth the zed camera and yolo using the cuda driver
+        #https://forums.developer.nvidia.com/t/how-to-use-tensorrt-by-the-multi-threading-package-of-python/123085/8
+        #https://stackoverflow.com/questions/73471618/trt-inference-using-onnx-error-code-1-cuda-driver-invalid-resource-handle
+        #self.cfx.push()
+
         input_image, image_raw, origin_h, origin_w = self.PreProcessImg(img)
         np.copyto(host_inputs[0], input_image.ravel())
         stream = cuda.Stream()
+
+        #Originally there but I moved it to init instead for error solving regarding cuda driver and zed cam
         self.context = self.engine.create_execution_context()
+
         cuda.memcpy_htod_async(cuda_inputs[0], host_inputs[0], stream)
         t1 = time.time()
         self.context.execute_async(self.batch_size, bindings, stream_handle=stream.handle)
@@ -115,7 +133,13 @@ class YoloTRT():
             det["conf"] = result_scores[j]
             det["box"] = box 
             det_res.append(det)
-            self.PlotBbox(box, img, label="{}:{:.2f}".format(self.categories[int(result_classid[j])], result_scores[j]),)
+
+            if plot_boxes:
+                self.PlotBbox(box, img, label=self.categories[int(result_classid[j])], score = result_scores[j])     #"{}:{:.2f}".format(self.categories[int(result_classid[j])], result_scores[j]),)
+        
+        #custom line (delete maybe)
+        #self.cfx.pop()
+        
         return det_res, t2-t1
 
     def PostProcess(self, output, origin_h, origin_w):
@@ -195,15 +219,28 @@ class YoloTRT():
 
         return iou
     
-    def PlotBbox(self, x, img, color=None, label=None, line_thickness=None):
+    def PlotBbox(self, x, img, color=None, label=None, score=None, line_thickness=None):
+        print(label)
+        if label == "blue_cone":
+            color = [255, 0, 0]
+        elif label == "yellow_cone":
+            color = [0, 255, 255]
+        elif label == "orange_cone":
+            color = [0, 128, 255]
+        elif label == "large_orange_cone":
+            color = [0, 50, 150]
+        else:
+            color = [random.randint(0, 255) for _ in range(3)]
+
         tl = (line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1)  # line/font thickness
-        color = color or [random.randint(0, 255) for _ in range(3)]
         c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
         cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
+
         if label:
             tf = max(tl - 1, 1)  # font thickness
             t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
             c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
             cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)  # filled
+            txt = f"{label}   {score}"
             cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA,)
         
