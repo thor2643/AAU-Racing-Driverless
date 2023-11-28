@@ -156,7 +156,7 @@ pos_=[0,(blue_points_np[0,1]-yellow_points_np[0,1])/2]
 dt=0.03 #time step in seconds
 stering_angle=0 #degrees
 diff_angle=0
-
+num_midtpoints_too_close=1
 pause=True
 
 for i in range(150*20):
@@ -178,12 +178,35 @@ for i in range(150*20):
     
     #transformed points
     yellow_points_tran, blue_points_tran=car_view(pos_,oriantation_)
-    midpoints=get_middelpoint_with_DT(yellow_points_tran, blue_points_tran)
-
-    mid_points_next=midpoints[1:5,:]
-
-    stering_angle=get_stering_angle(mid_points_next[0,:])
-
+    midpoints=get_middelpoint_with_DT(yellow_points_tran[0:,:], blue_points_tran[0:,:])
+    midpoints=midpoints[num_midtpoints_too_close:]
+    mid_points_next=midpoints[:4,:]
+    angles_x=[]
+    
+    gain=3/4
+    print(gain)
+    sum_gain=0
+    for i in range(len(mid_points_next)):
+        angles_x.append(get_stering_angle(mid_points_next[i,:]*gain))
+        print(f"gain={gain}, i={i}")
+        sum_gain+=gain
+        if gain==3/4:
+            gain=1/4
+        if i<(len(mid_points_next)-2):
+            gain=gain/2
+    
+        
+        """
+        for j in range(gain):
+            angles_x.append(get_stering_angle(mid_points_next[i,:]))
+        gain-=1
+    #angles_x[:]=get_stering_angle(mid_points_next[:,:])
+    stering_angle=np.mean(angles_x)"""
+    #stering_angle=np.sum(angles_x)
+    if np.sum(angles_x)<np.deg2rad(45) and np.sum(angles_x)>np.deg2rad(-45):
+        stering_angle=np.sum(angles_x)
+    print(f"angles_x={angles_x}, sum={np.sum(angles_x)}, sum gain={sum_gain}")
+    print(f"stering_angle={stering_angle}")
  
     ax_2.add_patch(Rectangle(car_pos, car_width, car_length, edgecolor='red', facecolor='red', lw=4, angle=car_theta))
 
