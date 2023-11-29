@@ -71,7 +71,7 @@ print("ready to loop")
 #---------------------Main loop-----------------------#
 
 #while True:
-for i in range(50):
+for i in range(100):
     cones = [] 
     t1 = time.time()
     # A new image is available if grab() returns SUCCESS
@@ -123,13 +123,4 @@ cv2.destroyAllWindows()
 
 # Close the camera
 zed.close()
-
-
-
-
-
-
-
-
-
 
