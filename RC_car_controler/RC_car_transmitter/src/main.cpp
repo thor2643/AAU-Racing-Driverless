@@ -63,7 +63,12 @@ void loop() {
   int y_value=analogRead(y_joy);
 
   Serial.println("x_value: "+String(x_value)+", y_value: "+String(y_value)+", button_state: ");
-
+  //¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+  float angle=map(x_value,0,4095,45,145);
+  angle=76.65; //96.5 is the middle position of the servo = 0 degrees
+  x_value=map(angle,45,145,0,4095);
+  Serial.println("angle: "+String(angle)+", new x_value: "+String(x_value));
+  //¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
   // Set values to send
   //strcpy(my_data_package.a, "The speed and steering angle for the RC car is:");
   my_data_package.b = y_value;
@@ -78,5 +83,8 @@ void loop() {
   else {
     Serial.println("Error sending the data");
   }
+  //¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+  //delay(500);
+  //¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
 }
 

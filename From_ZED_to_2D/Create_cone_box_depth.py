@@ -4,7 +4,7 @@ import os
 
 #parameters:
 run_number = 1
-frame_number = 1500
+frame_number = 150
 
 #path to data files
 data_path="C:\\Users\\3103e\\Documents\\GitHub\\AAU-Racing-Driverless\\ZED_camera\\Recordings_folder"
