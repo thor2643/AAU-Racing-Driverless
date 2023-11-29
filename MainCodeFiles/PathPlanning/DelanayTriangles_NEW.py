@@ -2,55 +2,6 @@ import numpy as np
 from scipy.spatial import Delaunay
 from BW_Alg_copy import Point, bowyer_watson
 
-#################
-#@
-#From @ to @ will be removed in the final version
-import matplotlib.pyplot as plt
-generation_time=0
-def plot_points(point_array, point_array_without_color, tri, midpoints):
-    # Check if tri is empty
-    if not tri:
-        print("No triangles found")
-    else:
-        # Use matplotlib to plot the points and the triangles found using the Delaunay triangulation
-        plt.triplot(point_array_without_color[:, 0], point_array_without_color[:, 1], np.array(tri))
-        
-        # Plot the trajectory
-        trajectory_planning(midpoints)
-
-        # Plot the midpoints in red, but with the number of which the point comes in the list
-        for i in range(len(midpoints)):
-            plt.plot(midpoints[i][0], midpoints[i][1], 'o', color='red')
-            plt.text(midpoints[i][0], midpoints[i][1], str(i))
-
-        for i in range(0, len(point_array), 2):
-            # Check if the last point is reached
-            x1, y1, color1 = point_array[i]
-            plt.plot(x1, y1, 'o', color=color1)
-            if i + 1 < len(point_array):
-                x2, y2, color2 = point_array[i + 1]
-                plt.plot(x2, y2, 'o', color=color2)  # Add a line in the opposite direction
-            
-            
-        plt.show(block=False)
-
-        # Close the plot windows afte 1 second
-        plt.pause(generation_time)
-        plt.close("all")
-
-def remove_Colors(point_array):
-    point_array_without_color = []
-    for point in point_array:
-        point_array_without_color.append([point[0], point[1]])
-
-    # convert the point array to a NumPy array
-    point_array_without_color = np.array(point_array_without_color)
-
-    return point_array_without_color
-
-#@
-#################    
-
 def delaunay_triangles_filtered(point_array, point_array_without_color, use_scipy=True):
     if use_scipy:
         # Generate the Delaunay triangulation using scipy.spatial.Delaunay

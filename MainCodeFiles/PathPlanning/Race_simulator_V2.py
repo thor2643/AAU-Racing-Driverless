@@ -157,8 +157,9 @@ dt=0.03 #time step in seconds
 stering_angle=0 #degrees
 diff_angle=0
 num_midtpoints_too_close=0
-number_of_midpoints=3
+number_of_midpoints=4
 pause=True
+integral_error=0
 
 for i in range(150*20):
     #run if key 'q' is not pressed
@@ -181,7 +182,11 @@ for i in range(150*20):
     yellow_points_tran, blue_points_tran=car_view(pos_,oriantation_)
     midpoints=get_middelpoint_with_DT(yellow_points_tran[0:,:], blue_points_tran[0:,:])
     midpoints=midpoints[num_midtpoints_too_close:]
-    mid_points_next=midpoints[:number_of_midpoints,:]
+    if (midpoints[0,0]**2+midpoints[0,1]**2)<(1.2**2):
+        mid_points_next=midpoints[1:number_of_midpoints+1,:]
+    else:
+        mid_points_next=midpoints[:number_of_midpoints,:]
+    #mid_points_next=midpoints[:number_of_midpoints,:]
     """
     j=0
     k=0
@@ -198,7 +203,7 @@ for i in range(150*20):
     """
     angles_x=[]
     
-    gain=4/5
+    gain=3/5
     print(gain)
     sum_gain=0
     for i in range(len(mid_points_next)):
@@ -206,8 +211,8 @@ for i in range(150*20):
         angles_x.append(get_stering_angle(mid_points_next[i,:]*gain))
         print(f"gain={gain}, i={i}")
         sum_gain+=gain
-        if gain==4/5:
-            gain=1/5
+        if gain==3/5:
+            gain=2/5
         if i<(len(mid_points_next)-2):
             gain=gain/2
     
@@ -218,11 +223,21 @@ for i in range(150*20):
         gain-=1
     #angles_x[:]=get_stering_angle(mid_points_next[:,:])
     stering_angle=np.mean(angles_x)"""
-    stering_angle=np.sum(angles_x)
-    if stering_angle>np.deg2rad(25):
-        stering_angle=np.deg2rad(25)
-    if stering_angle<np.deg2rad(-25):
-        stering_angle=np.deg2rad(-25)
+    stering_angle_new=np.sum(angles_x)
+    if stering_angle_new>np.deg2rad(25):
+        stering_angle_new=np.deg2rad(25)
+    if stering_angle_new<np.deg2rad(-25):
+        stering_angle_new=np.deg2rad(-25)
+
+    #PID
+    kp=0.05
+    ki=0.010
+    kd=0.005
+    angle_diff=stering_angle_new-stering_angle
+    integral_error+=angle_diff
+    stering_angle=angle_diff*kp+integral_error*ki+(diff_angle-stering_angle)*kd
+    #stering_angle+=(stering_angle_new-stering_angle)
+    #stering_angle=stering_angle_new*0.05
     print(f"angles_x={angles_x}, sum={np.sum(angles_x)}, sum gain={sum_gain}")
     print(f"stering_angle={stering_angle}")
  
