@@ -4,7 +4,6 @@
 !.gitattributes
 
 !MainCodeFiles/
-!From_ZED_to_2D\Develop_programs\Race_simulator_V3.py
 
 
 *.json

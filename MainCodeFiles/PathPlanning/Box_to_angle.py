@@ -91,13 +91,17 @@ def boxes_to_sterring_angle(bounding_box_list,point_cloud_xyz,car_length,old_ste
 
     #get the weighted streing angle of the midpoints:
     angles_x=[]
+    angles_list=[]
+    sum_weights=0
+    if len(mid_points_next)<number_of_midpoints:
+        number_of_midpoints=len(mid_points_next)
     for i in range(number_of_midpoints):    
-        angles_x.append(get_stering_angle(mid_points_next[i,:]*weight_p0,car_length))
+        angles_x.append(get_stering_angle(mid_points_next[i,:],car_length)*weight_p0)
+        sum_weights+=weight_p0
         if weight_p0==3/5:
             weight_p0=weight_p1*2
         if i<(len(mid_points_next)-2):
             weight_p0=weight_p0/2
-    
     stering_angle=np.sum(angles_x)
 
     #check if the stering angle is too big:
@@ -115,7 +119,7 @@ def boxes_to_sterring_angle(bounding_box_list,point_cloud_xyz,car_length,old_ste
 
 
 ###TESTING:
-"""
+
 import os
 
 #parameters:
@@ -126,6 +130,10 @@ frame_number = 150
 data_path="C:\\Users\\3103e\\Documents\\GitHub\\AAU-Racing-Driverless\\ZED_camera\\Recordings_folder"
 
 Frame_150=[[[121, 419], [175, 490],0], [[403, 396], [423, 426],0], [[469, 388], [483, 410],0], [[507, 383], [519, 400],0], [[725, 388], [735, 404],1], [[752, 393], [764, 411],1], [[829, 402], [850, 429],1], [[1018, 430], [1059, 492],1]]
+
+#Frame_150=[[[121, 419], [175, 490],0], [[403, 396], [423, 426],0], [[829, 402], [850, 429],1], [[1018, 430], [1059, 492],1]]
+#Frame_150=[[[121, 419], [175, 490],0], [[403, 396], [423, 426],0], [[1018, 430], [1059, 492],1]]
+#Frame_150=[[[121, 419], [175, 490],0], [[829, 402], [850, 429],1]]
 
 depth_data_path = os.path.join(data_path,"Run{}".format(run_number))
 depth_arr=np.load(os.path.join(depth_data_path,"depth_{}.npy".format(frame_number)))
@@ -165,7 +173,7 @@ ax_1.scatter(midpoints[:,0],midpoints[:,1],c='r', marker='o')
 
 cv2.imshow("Image_point_cloud", point_cloud_frame)
 plt.show()
-"""
+""""""
 """
 ####
 #put this in the for loop in "def boxes_to_cone_pos()":
