@@ -8,7 +8,7 @@ def list_to_nx3_array(list):
 
 
 def boxes_to_cone_pos(bounding_box_list,point_cloud_xyz):
-    #bounding_box_list=[[x1,y1],[x2,y2],type] where types: 0=yellow, 1=blue, 2=orange, 3=large orange
+    #bounding_box_list=[[x1,y1,x2,y2],type] where types: 0=yellow, 1=blue, 2=orange, 3=large orange
     #point_cloud_xyz is a numpy array of shape (height,width,3) where the last dimension is the x,y,z coordinates of the point cloud
     #returns a list of the cones 2D position and type: [[x1,y1,type1],[x2,y2,type2],...] where x and y are in (mili/centi)meters
 
@@ -21,10 +21,10 @@ def boxes_to_cone_pos(bounding_box_list,point_cloud_xyz):
         x_1=box[0][0]
         y_1=box[0][1]
             #the second point is the bottom right corner
-        x_2=box[1][0]
-        y_2=box[1][1]
+        x_2=box[0][2]
+        y_2=box[0][3]
             #the cone type
-        type_cone=box[2]
+        type_cone=box[1]
         
         #The pixel coordinates of the new bounding box that is 1/3 of the original bounding box
             #the new box is for getting the position of the cone from the point cloud
@@ -50,7 +50,7 @@ def boxes_to_cone_pos(bounding_box_list,point_cloud_xyz):
     return cones_pos_type
 
 def boxes_to_midtpoints(bounding_box_list,point_cloud_xyz):
-    #bounding_box_list=[[x1,y1],[x2,y2],type] where types: 0=yellow, 1=blue, 2=orange, 3=large orange
+    #bounding_box_list=[[x1,y1,x2,y2],type] where types: 0=yellow, 1=blue, 2=orange, 3=large orange
     #point_cloud_xyz is a numpy array of shape (height,width,3) where the last dimension is the x,y,z coordinates of the point cloud
     #returns a list of the midpoints of the triangles that are made by two points of different color: [[x1,y1],[x2,y2],...] where x and y are in (mili/centi)meters
 
@@ -78,7 +78,7 @@ def get_stering_angle(point_pos,car_length):
     return np.rad2deg(stering_angle)
 
 def boxes_to_sterring_angle(bounding_box_list,point_cloud_xyz,car_length,old_steering_angle=0,number_of_midpoints=4,weight_p0=3/5,weight_p1=1/5):
-    #bounding_box_list=[[x1,y1],[x2,y2],type] where types: 0=yellow, 1=blue, 2=orange, 3=large orange
+    #bounding_box_list=[[x1,y1,x2,y2],type] where types: 0=yellow, 1=blue, 2=orange, 3=large orange
     #point_cloud_xyz is a numpy array of shape (height,width,3) where the last dimension is the x,y,z coordinates of the point cloud
     #returns the steering angle in degrees
 
@@ -119,7 +119,7 @@ def boxes_to_sterring_angle(bounding_box_list,point_cloud_xyz,car_length,old_ste
 
 
 ###TESTING:
-
+"""
 import os
 
 #parameters:
@@ -129,7 +129,8 @@ frame_number = 150
 #path to data files
 data_path="C:\\Users\\3103e\\Documents\\GitHub\\AAU-Racing-Driverless\\ZED_camera\\Recordings_folder"
 
-Frame_150=[[[121, 419], [175, 490],0], [[403, 396], [423, 426],0], [[469, 388], [483, 410],0], [[507, 383], [519, 400],0], [[725, 388], [735, 404],1], [[752, 393], [764, 411],1], [[829, 402], [850, 429],1], [[1018, 430], [1059, 492],1]]
+#Frame_150=[[[121, 419], [175, 490],0], [[403, 396], [423, 426],0], [[469, 388], [483, 410],0], [[507, 383], [519, 400],0], [[725, 388], [735, 404],1], [[752, 393], [764, 411],1], [[829, 402], [850, 429],1], [[1018, 430], [1059, 492],1]]
+Frame_150=[[[121, 419,175, 490],0], [[403, 396,423, 426],0], [[469, 388,483, 410],0], [[507, 383,519, 400],0], [[725, 388,735, 404],1], [[752, 393,764, 411],1], [[829, 402,850, 429],1], [[1018, 430,1059, 492],1]]
 
 #Frame_150=[[[121, 419], [175, 490],0], [[403, 396], [423, 426],0], [[829, 402], [850, 429],1], [[1018, 430], [1059, 492],1]]
 #Frame_150=[[[121, 419], [175, 490],0], [[403, 396], [423, 426],0], [[1018, 430], [1059, 492],1]]
@@ -173,7 +174,7 @@ ax_1.scatter(midpoints[:,0],midpoints[:,1],c='r', marker='o')
 
 cv2.imshow("Image_point_cloud", point_cloud_frame)
 plt.show()
-""""""
+"""
 """
 ####
 #put this in the for loop in "def boxes_to_cone_pos()":

@@ -8,7 +8,7 @@ import cuda_context
 
 #Our own modules
 from Yolo.yoloDet import YoloTRT
-
+from PathPlanning.Box_to_angle import boxes_to_angle
 
 #--------------------Initialize camera--------------------#
 
@@ -98,9 +98,8 @@ for i in range(100):
 
 
         #----------Emil kode placeres her------------#
-        
-        print(cones)
-
+        print(cones) #cones er en liste af lister, hvor hver liste indeholder [[x1,y1,x2,y2], type]
+        servo_angle, stering_angle = boxes_to_angle(cones, point_cloud_np,0.7)
 
 
 
