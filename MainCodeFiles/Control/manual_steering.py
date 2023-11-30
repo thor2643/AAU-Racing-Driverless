@@ -1,10 +1,10 @@
 from getkey import getkey, keys
 import serial
+import time
 
-ser = serial.Serial("/dev/ttyUSB1", timeout=5)
+#ser = serial.Serial("/dev/ttyUSB1", baudrate=115200, timeout=5)
 
-def manual_steering():#serial):
-    global ser
+def manual_steering(serial):
     print("You can now control the car using the arrow keys")
     #Maks højre:   45 
     #Ligeud:       95 (cirkus)
@@ -45,11 +45,11 @@ def manual_steering():#serial):
             break
 
         #print(f"A{angle}V{speed}")
-        response = ser.readline().decode("utf-8").rstrip()
         ser.write(f"A{angle}V{speed}".encode("utf-8"))
+        response = ser.readline().decode("utf-8").rstrip()
 
         
         print(response)
 
 
-manual_steering()#ser)
+#manual_steering(ser)#ser)

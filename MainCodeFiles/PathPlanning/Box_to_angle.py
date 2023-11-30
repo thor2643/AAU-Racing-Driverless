@@ -68,16 +68,16 @@ def boxes_to_midtpoints(bounding_box_list,point_cloud_xyz):
     midpoints = DT.find_midpoints(tri, cone_coords_list)
     return midpoints
 
-def get_stering_angle(point_pos,car_length):
+def get_steering_angle(point_pos,car_length):
     #point_pos: position of the point the car shall be heading towards
-    #returns: stering angle in degrees
+    #returns: steering angle in degrees
     x_1=point_pos[0]
     y_1=point_pos[1]
     radius=(x_1**2+y_1**2)/(2*x_1)
-    stering_angle=np.arctan(car_length/radius)
-    return np.rad2deg(stering_angle)
+    steering_angle=np.arctan(car_length/radius)
+    return np.rad2deg(steering_angle)
 
-def boxes_to_sterring_angle(bounding_box_list,point_cloud_xyz,car_length,old_steering_angle=0,number_of_midpoints=4,weight_p0=3/5,weight_p1=1/5):
+def boxes_to_steering_angle(bounding_box_list,point_cloud_xyz,car_length,old_steering_angle=0,number_of_midpoints=4,weight_p0=3/5,weight_p1=1/5):
     #bounding_box_list=[[x1,y1,x2,y2],type] where types: 0=yellow, 1=blue, 2=orange, 3=large orange
     #point_cloud_xyz is a numpy array of shape (height,width,3) where the last dimension is the x,y,z coordinates of the point cloud
     #returns the steering angle in degrees
@@ -96,30 +96,30 @@ def boxes_to_sterring_angle(bounding_box_list,point_cloud_xyz,car_length,old_ste
     if len(mid_points_next)<number_of_midpoints:
         number_of_midpoints=len(mid_points_next)
     for i in range(number_of_midpoints):    
-        angles_x.append(get_stering_angle(mid_points_next[i,:],car_length)*weight_p0)
+        angles_x.append(get_steering_angle(mid_points_next[i,:],car_length)*weight_p0)
         sum_weights+=weight_p0
         if weight_p0==3/5:
             weight_p0=weight_p1*2
         if i<(len(mid_points_next)-2):
             weight_p0=weight_p0/2
-    stering_angle=np.sum(angles_x)
+    steering_angle=np.sum(angles_x)
 
-    #check if the stering angle is too big:
-    if stering_angle>90 or stering_angle<-90:
-        stering_angle=old_steering_angle
-    elif stering_angle>25:
-        stering_angle=25
-    elif stering_angle<-25:
-        stering_angle=-25
+    #check if the steering angle is too big:
+    if steering_angle>90 or steering_angle<-90:
+        steering_angle=old_steering_angle
+    elif steering_angle>25:
+        steering_angle=25
+    elif steering_angle<-25:
+        steering_angle=-25
     
-    #convert the stering angle to servo angle:
-    servo_angle=-1.897*stering_angle+94.728
+    #convert the steering angle to servo angle:
+    servo_angle=-1.897*steering_angle+94.728
 
-    return servo_angle,stering_angle
+    return servo_angle,steering_angle
 
 
 ###TESTING:
-"""
+#"""
 import os
 
 #parameters:
@@ -149,8 +149,8 @@ img_point_cloud_BGRA = np.frombuffer(img_point_cloud_bytes, dtype=np.uint8).resh
 
 point_cloud_frame=cv2.cvtColor(img_point_cloud_BGRA, cv2.COLOR_BGRA2RGBA)
 
-servo_angle,stering_angle=boxes_to_sterring_angle(Frame_150,depth_arr[:,:,0:3],700,0,4)
-print(f"servo_angle={servo_angle}, stering_angle={stering_angle}")
+servo_angle,steering_angle=boxes_to_steering_angle(Frame_150,depth_arr[:,:,0:3],700,0,4)
+print(f"servo_angle={servo_angle}, steering_angle={steering_angle}")
 
 points_cones=boxes_to_cone_pos(Frame_150,depth_arr[:,:,0:3])
 
@@ -174,7 +174,7 @@ ax_1.scatter(midpoints[:,0],midpoints[:,1],c='r', marker='o')
 
 cv2.imshow("Image_point_cloud", point_cloud_frame)
 plt.show()
-"""
+#"""
 """
 ####
 #put this in the for loop in "def boxes_to_cone_pos()":

@@ -9,7 +9,8 @@ import serial
 
 #Our own modules
 from Yolo.yoloDet import YoloTRT
-from PathPlanning.Box_to_angle import boxes_to_anglefrom manual_steering import manual_steering
+from PathPlanning.Box_to_angle import boxes_to_steering_angle
+from Control.manual_steering import manual_steering
 
 
 
@@ -79,7 +80,7 @@ print("YOLO initialisation complete!")
 
 categories_idxs = {"yellow_cone": 0, "blue_cone": 1, "orange_cone": 2, "large_orange_cone": 3, "unknown_cone": 4}
 
-#ser = serial.Serial("/dev/ttyUSB0", 115200)
+ser = serial.Serial("/dev/ttyUSB1", 115200, timeout=3)
 
 visualise_output = True
 

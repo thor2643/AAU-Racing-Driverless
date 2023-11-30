@@ -3,7 +3,7 @@ import random
 import time
 
 # Connect to the serial port
-ser = serial.Serial('COM5', 115200)  # Adjust the port and baud rate (/dev/ttyUSB0)
+ser = serial.Serial('/dev/ttyUSB1', 115200)  # Adjust the port and baud rate (/dev/ttyUSB0)
 
 """
 while True:
@@ -23,7 +23,7 @@ time.sleep(0.33)
 i=0
 while True:
     data = ser.readline().decode('utf-8').rstrip()
-    ser.write(f"Hello from Python! no{i}".encode('utf-8'))
+    ser.write(f"A{95}V{90}".encode('utf-8'))
     
     print(f'Received data: {data}')
     #time.sleep(0.33)
