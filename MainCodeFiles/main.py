@@ -9,26 +9,12 @@ import serial
 
 #Our own modules
 from Yolo.yoloDet import YoloTRT
-from PathPlanning.Box_to_angle import boxes_to_steering_angle
+from PathPlanning.Box_to_angle import boxes_to_steering_angle, boxes_to_cone_pos
 from Control.manual_steering import manual_steering
 
 
 
-
-print()
-firstKey = input("Do you want to start driving?[y/n]")
-if firstKey.lower() == "y":
-    pass
-else:
-    quit()
-print()
-print("To interrupt the program and go to menu: CTRL+C")
-time.sleep(3)
-print()
-print()
-
-
-#--------------------Initialize camera--------------------#
+#-------------------- Initialize camera --------------------#
 
 # Create a ZED camera object
 zed = sl.Camera()
@@ -66,9 +52,9 @@ runtime_parameters = sl.RuntimeParameters()
 
 
 
-#--------------------Initialize YOLO--------------------#
+#-------------------- Initialize YOLO --------------------#
 
-print("YOLO model initialises")
+print("YOLO model initialises...")
 zed_cuda_ctx.pop_ctx()
 
 model = YoloTRT(library="MainCodeFiles/Yolo/libmyplugins.so", engine="MainCodeFiles/Yolo/yolov5n.engine", conf=0.5, yolo_ver="v5")
@@ -76,14 +62,42 @@ model = YoloTRT(library="MainCodeFiles/Yolo/libmyplugins.so", engine="MainCodeFi
 zed_cuda_ctx.push_ctx()
 
 print("YOLO initialisation complete!")
-#--------------------Initialize miscellaneous--------------------#
+#-------------------- Initialize miscellaneous --------------------#
 
 categories_idxs = {"yellow_cone": 0, "blue_cone": 1, "orange_cone": 2, "large_orange_cone": 3, "unknown_cone": 4}
 
-ser = serial.Serial("/dev/ttyUSB1", 115200, timeout=3)
+try:
+    ser = serial.Serial("/dev/ttyUSB1", 115200, dsrdtr=None)
+except:
+    try: 
+        ser = serial.Serial("/dev/ttyUSB0", 115200, dsrdtr=None)
+    except:
+        ser = None
 
-visualise_output = True
+ser.setRTS(False)
+ser.setDTR(False)
 
+visualise_output = False
+
+error_cnt = 0
+max_error_cnt = 15
+
+servo_angle = 95
+speed = 140
+
+#--------------------- Info prints -----------------------#
+
+print()
+firstKey = input("Do you want to start driving?[y/n]")
+if firstKey.lower() == "y":
+    pass
+else:
+    quit()
+print()
+print("To interrupt the program and go to menu: CTRL+C")
+time.sleep(3)
+print()
+print()
 
 print()
 print()
@@ -92,10 +106,9 @@ time.sleep(1)
 
 
 
-#---------------------Main loop-----------------------#
+#--------------------- Main loop -----------------------#
 
-#while True:
-for i in range(100):
+while True:
     try:
         cones = [] 
         t1 = time.time()
@@ -114,48 +127,100 @@ for i in range(100):
 
             point_cloud_np = point_cloud.get_data()
 
+
+            #Run the yolo prediction
             zed_cuda_ctx.pop_ctx()
             detections, t = model.Inference(image_np, plot_boxes=visualise_output)
             for obj in detections:
-                cones.append([obj['box'], categories_idxs[obj['class']]])
+                cones.append([[obj['box'][0], obj['box'][1], obj['box'][2], obj['box'][3]], categories_idxs[obj['class']]])
                 #print(obj['class'], obj['conf'], obj['box'])
             zed_cuda_ctx.push_ctx()
 
 
-        #----------Emil kode placeres her------------#
-        print(cones) #cones er en liste af lister, hvor hver liste indeholder [[x1,y1,x2,y2], type]
-        servo_angle, stering_angle = boxes_to_angle(cones, point_cloud_np,0.7)
+        #print(cones) #cones er en liste af lister, hvor hver liste indeholder [[x1,y1,x2,y2], type]
+        try:
+            servo_angle, stering_angle = boxes_to_steering_angle(cones, point_cloud_np, 0.58)
+            error_cnt = 0
+        except Exception as error:
+            error_cnt += 1
+
+            if error_cnt > max_error_cnt:
+                raise RuntimeError("Too many faulty path calculations")
+            else:
+                print(f"\nAn exception was raised\n {error}\n")
+                print("No path path was calculated.\nUsing previous path")
 
 
 
+        ################## SIgne kommer her ##############
+        #pos_type = boxes_to_cone_pos()
 
+        #check_for_orange_cones()
+
+        ###################
+
+
+        if servo_angle != -1:
+            ser.write(f"A{int(servo_angle)}V{speed}".encode("utf-8"))
+        
         if visualise_output:
             cv2.imshow("Output", image_np)
 
             key_cv = cv2.waitKey(1)
-        #if key == ord('q'):
-            #break
-        #else:
-            #pass
 
         t2 = time.time()
         
         print(f"FPS: {1/(t2-t1)}")
 
+        if ser.in_waiting:
+            #Få mode fra esp [manual/auto]
+            mode = ser.readline().decode('utf-8').rstrip()
+
+            if mode == "manual":
+                while True:
+                    if ser.in_waiting:
+                        msg = ser.readline().decode('utf-8').rstrip()
+
+                        if msg == "auto":
+                            break
+            elif mode == "stop":
+                print("!!! E-STOP !!!")
+                break
+            elif mode == "auto":
+                pass
+
     except KeyboardInterrupt:
+        ser.write("A95V90".encode("utf-8"))
         print()
         print()
         print("Program stopped")
-        key = input("Continue[y] or drive manually[m] or quit[q]: ")
+        key = input("Continue[y] or drive manually[m] or quit[q] or emergency stop[s]: ")
         if key == "y":
             #Must push cuda context otherwise an error will occur 
             zed_cuda_ctx.push_ctx()
         elif key == "m":
-            manual_steering(None)#ser)
+            ser.write("manual".encode("utf-8"))
+            manual_steering(ser)
+            ser.write("auto".encode("utf-8"))
+        elif key == "s":
+            print("!!! E-STOP !!!")
+            ser.write("stop".encode("utf-8"))
+        elif key == "q":
+            break
             
         else:
             break
+
+    except RuntimeError as error:
+        ser.write("A95V90".encode("utf-8"))
+        print()
+        print(error)
+        print("\nProgram terminates")
+        break
     
+
+ser.write("A95V90".encode("utf-8"))
+ser.close()
 
 #Close cv2 windows
 cv2.destroyAllWindows()

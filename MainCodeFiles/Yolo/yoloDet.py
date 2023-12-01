@@ -37,7 +37,7 @@ class YoloTRT():
 	
         self.categories = ["yellow_cone", "blue_cone", "orange_cone", "large_orange_cone", "unknown_cone"]
 
-        TRT_LOGGER = trt.Logger(trt.Logger.INFO)
+        TRT_LOGGER = trt.Logger()#trt.Logger.INFO)
 
         ctypes.CDLL(library)
 

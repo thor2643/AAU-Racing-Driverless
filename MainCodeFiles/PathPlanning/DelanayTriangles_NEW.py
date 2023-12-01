@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial import Delaunay
-from BW_Alg_copy import Point, bowyer_watson
+from PathPlanning.BW_Alg_copy import Point, bowyer_watson
 
 def delaunay_triangles_filtered(point_array, point_array_without_color, use_scipy=True):
     if use_scipy:

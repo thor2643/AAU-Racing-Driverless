@@ -1,7 +1,8 @@
-import DelanayTriangles_NEW as DT
+import PathPlanning.DelanayTriangles_NEW as DT
 
 import numpy as np
 import cv2
+import time
 
 def list_to_nx3_array(list):
     return np.array(list).reshape(-1,3)
@@ -32,7 +33,7 @@ def boxes_to_cone_pos(bounding_box_list,point_cloud_xyz):
         new_y_1=int((y_2-y_1)*2/3+y_1)
         new_x_1=int((x_2-x_1)*1/3+x_1)
         new_x_2=int(-1*(x_2-x_1)*1/3+x_2)
-
+        y_2 = int(y_2)
 
         #get all the 3D x, y, z coordinates of the point cloud in the new bounding box:
             #save the 2D coordinates of the point cloud in the new bounding box:
@@ -82,7 +83,21 @@ def boxes_to_steering_angle(bounding_box_list,point_cloud_xyz,car_length,old_ste
     #point_cloud_xyz is a numpy array of shape (height,width,3) where the last dimension is the x,y,z coordinates of the point cloud
     #returns the steering angle in degrees
 
-    #get the midpoints of the triangles that are made by two points of different color:
+    #Check if there are enough cones to make a path
+    id_list = [val[1] for val in bounding_box_list]
+
+    different_cones = all(id in id_list for id in [0,1])
+    orange_cone = any(id in id_list for id in [2,3,4])
+    if len(bounding_box_list) < 3 or not different_cones:
+        print(f"Koden returnerer her pga. listen: {bounding_box_list}")
+        return [-1, -1]
+    
+    if orange_cone:
+        print(f"Yolo fandt en anden kegle med id-listen: {id_list}")
+        time.sleep(20)
+        return [-1, -1]
+
+    #get the midpoints of the triangles that are made by two points of different color    
     midpoints=boxes_to_midtpoints(bounding_box_list,point_cloud_xyz)
     midpoints=np.array(midpoints).reshape(-1,2)
 
@@ -119,7 +134,7 @@ def boxes_to_steering_angle(bounding_box_list,point_cloud_xyz,car_length,old_ste
 
 
 ###TESTING:
-#"""
+"""
 import os
 
 #parameters:
@@ -174,7 +189,7 @@ ax_1.scatter(midpoints[:,0],midpoints[:,1],c='r', marker='o')
 
 cv2.imshow("Image_point_cloud", point_cloud_frame)
 plt.show()
-#"""
+"""
 """
 ####
 #put this in the for loop in "def boxes_to_cone_pos()":
