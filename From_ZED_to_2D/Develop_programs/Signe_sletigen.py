@@ -505,7 +505,7 @@ def race_track_7():
     return yellow_points,blue_points
 
 
-yellow_points,blue_points=race_track_4()
+yellow_points,blue_points=race_track_7()
 
 #print(f"yellow_points=\n{yellow_points.tolist()}")
 #print(f"blue_points=\n{blue_points.tolist()}")
@@ -558,7 +558,7 @@ def plot_kegler(yellow_points,blue_points, x_axis_length=3.5, y_axis_length=30):
     # Add labels, title, legend, etc., if needed
     plt.xlabel('X-axis')
     plt.ylabel('Y-axis')
-    plt.title('Setup of the Acceleration track')
+    plt.title('Setup of the Trackdrive track')
     plt.legend()
 
     # Show the plot
