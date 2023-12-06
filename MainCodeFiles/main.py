@@ -10,6 +10,7 @@ import serial
 #Our own modules
 from Yolo.yoloDet import YoloTRT
 from PathPlanning.Box_to_angle import boxes_to_steering_angle, boxes_to_cone_pos
+from PathPlanning.check_for_orange import check_for_orange_cones
 from Control.manual_steering import manual_steering
 
 
@@ -57,7 +58,7 @@ runtime_parameters = sl.RuntimeParameters()
 print("YOLO model initialises...")
 zed_cuda_ctx.pop_ctx()
 
-model = YoloTRT(library="MainCodeFiles/Yolo/libmyplugins.so", engine="MainCodeFiles/Yolo/yolov5n.engine", conf=0.5, yolo_ver="v5")
+model = YoloTRT(library="MainCodeFiles/Yolo/libmyplugins.so", engine="MainCodeFiles/Yolo/200_SGD_YOLOv5n.engine", conf=0.5, yolo_ver="v5")
 
 zed_cuda_ctx.push_ctx()
 
@@ -79,6 +80,15 @@ ser.setDTR(False)
 
 visualise_output = False
 
+#controls what track are run. True=acceleration. False= Trackdrive
+Track = True
+#keeps track of number of orange cones
+number_of_orange_cones = 0
+#number of times two orange cones has to be detected to be considered seeing two orange cones:
+orange_seen_in_row = 0
+#making it wait after an orange cone is detected
+Wait_cone = False
+
 error_cnt = 0
 max_error_cnt = 15
 
@@ -88,11 +98,16 @@ speed = 140
 #--------------------- Info prints -----------------------#
 
 print()
-firstKey = input("Do you want to start driving?[y/n]")
-if firstKey.lower() == "y":
-    pass
+firstKey = input("Do you want to start driving?[a/t/n], (a=acceleration, t=Trackdrive)")
+if firstKey.lower() == "a":
+    Track = True
+    print(Track)
+elif firstKey.lower() == "t":
+    Track = False
 else:
+    print("Quitting")
     quit()
+
 print()
 print("To interrupt the program and go to menu: CTRL+C")
 time.sleep(3)
@@ -151,13 +166,22 @@ while True:
                 print("No path path was calculated.\nUsing previous path")
 
 
+        if Wait_cone == True:
+            t3 = time.time()
+            if t3 - time_for_last_cone >= 10:
+                Wait_cone = False
 
-        ################## SIgne kommer her ##############
-        #pos_type = boxes_to_cone_pos()
-
-        #check_for_orange_cones()
-
+        ################## Signe kommer her ##############
+        if Wait_cone == False:
+            time_for_last_cone = time.time()
+            #recieving cone positions and types
+            cones_pos_type = boxes_to_cone_pos(cones,point_cloud_np)
+            #Checking to see if any orange cones are detected and stops if needed
+            number_of_orange_cones, orange_seen_in_row, Wait_cone = check_for_orange_cones(cones_pos_type,Track, number_of_orange_cones, ser, servo_angle, orange_seen_in_row, Wait_cone)
+            
         ###################
+        #print(f"number_of_orange_cones{number_of_orange_cones}")
+        #print(f"orange_seen_in_row {orange_seen_in_row}")
 
 
         if servo_angle != -1:

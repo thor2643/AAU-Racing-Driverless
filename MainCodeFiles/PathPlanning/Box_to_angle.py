@@ -94,15 +94,17 @@ def boxes_to_steering_angle(bounding_box_list,point_cloud_xyz,car_length,old_ste
     id_list = [val[1] for val in bounding_box_list]
 
     different_cones = all(id in id_list for id in [0,1])
-    orange_cone = any(id in id_list for id in [2,3,4])
+    #orange_cone = any(id in id_list for id in [2,3,4])
     if len(bounding_box_list) < 3 or not different_cones:
         print(f"Koden returnerer her pga. listen: {bounding_box_list}")
         return [-1, -1]
     
+    """"
     if orange_cone:
         print(f"Yolo fandt en anden kegle med id-listen: {id_list}")
         time.sleep(20)
         return [-1, -1]
+    """
 
     #get the midpoints of the triangles that are made by two points of different color    
     midpoints=boxes_to_midtpoints(bounding_box_list,point_cloud_xyz)
