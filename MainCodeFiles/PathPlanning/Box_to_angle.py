@@ -57,6 +57,13 @@ def boxes_to_midtpoints(bounding_box_list,point_cloud_xyz):
     #convert the bounding box list to a list of the cones 2D position and type: [[x1,y1,type1],[x2,y2,type2],...] where x and y are in (mili/centi)meters
     cone_coords_list=boxes_to_cone_pos(bounding_box_list,point_cloud_xyz)
 
+    #Ensure that NO midpoints are generated between orange cones and blue/yellow cones.
+    #cone_coords_list only of type 0 and 1, so remove the type 2 and 3:
+    cone_coords_list=np.array(cone_coords_list).reshape(-1,3)
+    cone_coords_list=cone_coords_list[cone_coords_list[:,2]<2,:]
+    #reshape back to a list:
+    cone_coords_list=cone_coords_list.tolist()
+
     #Remove color information and make it to a numpy array of shape (n,2):
     bounding_box_arr_without_color=np.array(cone_coords_list).reshape(-1,3)[:,0:2]
 

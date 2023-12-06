@@ -164,7 +164,7 @@ integral_error=0
 counter=0
 route_taken=[]
 
-for i in range(110):
+for i in range(1100):
     #run if key 'q' is not pressed
     if keyboard.is_pressed('z'):
         print("The key 'z' was pressed and the program is now terminated!")
