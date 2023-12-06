@@ -1,5 +1,7 @@
 *.json
 .vscode/
+processing_ZED
+preproccesing
 
 #Exampel code from ZED SDK
 Exampel_code/
