@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import time
 import keyboard
 
+from matplotlib.backend_bases import MouseButton
+
 
 
 class Lidar:
@@ -101,25 +103,24 @@ class Lidar:
         return distance_array, angle_array
     
     def get_length_to_point(self, event, distance_array, angle_array):
-        distance_array = []
-
         x_array = np.array(distance_array) * np.cos(np.array(np.radians(angle_array)))
         y_array = np.array(distance_array) * np.sin(np.array(np.radians(angle_array)))
-        
-        if event.inaxes is not None:
+                
+        if event.button is MouseButton.LEFT:
             x_mouse = event.datax
             y_mouse = event.datay
-        
+            
             # Calculate the distance to the closest point from the mouse
-            for distances in range(distance_array):
-                distance = math.sqrt((x_array - x_mouse)**2 + (y_array - y_mouse)**2)
+            distance_array = []
+            for i, distance in enumerate(distance_array):
+                distance = math.sqrt((x_array[i] - x_mouse)**2 + (y_array[i] - y_mouse)**2)
                 distance_array.append(distance)
 
             min_distance = min(distance_array)
             min_distance_index = distance_array.index(min_distance)
 
             distance_of_interest = math.sqrt((x_array[min_distance_index] - 0)**2 + (y_array[min_distance_index] - 0)**2)
-            
+                
             # Print the distance to the closest point from the mouse
             print('Distance to closest point: ', distance_of_interest)
 
@@ -157,11 +158,13 @@ try:
         if keyboard.is_pressed('q'):
             plt.close('all')
             break
-        
+
         single_scan_data = lidar.singleScan()
 
         distance_array, angle_array = lidar.parse_data(single_scan_data)                
-           
+        
+        lidar.get_length_to_point(distance_array= distance_array, angle_array= angle_array)
+
         x_array = np.array(distance_array) * np.cos(np.array(np.radians(angle_array)))
         y_array = np.array(distance_array) * np.sin(np.array(np.radians(angle_array)))
 
