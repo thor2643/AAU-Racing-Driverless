@@ -467,38 +467,38 @@ def race_track_7():
     yellow_points,blue_points=stright_points(pos_point,orientation_global,5,yellow_points,blue_points)
     
     #turn - section 2: 130 deg left 8 m radius 
-    yellow_points,blue_points=turn_points(pos_point,orientation_global,2,6,np.deg2rad(90),yellow_points,blue_points,True)
+    yellow_points,blue_points=turn_points(pos_point,orientation_global,2.5,6,np.deg2rad(90),yellow_points,blue_points,True)
     
     #sthight - section 1: 15 m
     yellow_points,blue_points=stright_points(pos_point,orientation_global,5,yellow_points,blue_points)
     
     #turn - section 2: 130 deg left 8 m radius 
-    yellow_points,blue_points=turn_points(pos_point,orientation_global,2,6,np.deg2rad(90),yellow_points,blue_points,True)
+    yellow_points,blue_points=turn_points(pos_point,orientation_global,2.5,6,np.deg2rad(90),yellow_points,blue_points,True)
     
     #sthight - section 1: 15 m
     yellow_points,blue_points=stright_points(pos_point,orientation_global,5,yellow_points,blue_points)
     
     
     #turn - section 2: 130 deg left 8 m radius 
-    yellow_points,blue_points=turn_points(pos_point,orientation_global,2,12,np.deg2rad(45),yellow_points,blue_points,False)
+    yellow_points,blue_points=turn_points(pos_point,orientation_global,2.5,12,np.deg2rad(45),yellow_points,blue_points,False)
     
     #turn - section 2: 130 deg left 8 m radius 
-    yellow_points,blue_points=turn_points(pos_point,orientation_global,2,6,np.deg2rad(90),yellow_points,blue_points,True)
+    yellow_points,blue_points=turn_points(pos_point,orientation_global,2.5,6,np.deg2rad(90),yellow_points,blue_points,True)
     
     #sthight - section 1: 15 m
     yellow_points,blue_points=stright_points(pos_point,orientation_global,5,yellow_points,blue_points)
     
     #turn - section 2: 130 deg left 8 m radius 
-    yellow_points,blue_points=turn_points(pos_point,orientation_global,2,6,np.deg2rad(120),yellow_points,blue_points,True)
+    yellow_points,blue_points=turn_points(pos_point,orientation_global,2.,6,np.deg2rad(120),yellow_points,blue_points,True)
     
       #turn - section 2: 130 deg left 8 m radius 
-    yellow_points,blue_points=turn_points(pos_point,orientation_global,2,6,np.deg2rad(90),yellow_points,blue_points,False)
+    yellow_points,blue_points=turn_points(pos_point,orientation_global,2.5,6,np.deg2rad(90),yellow_points,blue_points,False)
     
     #turn - section 2: 130 deg left 8 m radius 
-    yellow_points,blue_points=turn_points(pos_point,orientation_global,2,6,np.deg2rad(180),yellow_points,blue_points,True)
+    yellow_points,blue_points=turn_points(pos_point,orientation_global,2.5,6,np.deg2rad(180),yellow_points,blue_points,True)
     
     #turn - section 2: 130 deg left 8 m radius 
-    yellow_points,blue_points=turn_points(pos_point,orientation_global,2,6,np.deg2rad(30),yellow_points,blue_points,False)
+    yellow_points,blue_points=turn_points(pos_point,orientation_global,2.5,6,np.deg2rad(30),yellow_points,blue_points,False)
 
     blue_points=np.append(blue_points,[[3.1,-2.18]],axis=0)
     
