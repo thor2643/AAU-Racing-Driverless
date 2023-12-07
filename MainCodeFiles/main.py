@@ -88,6 +88,8 @@ number_of_orange_cones = 0
 orange_seen_in_row = 0
 #making it wait after an orange cone is detected
 Wait_cone = False
+STOP_for_orange = False
+firstcone = True
 
 error_cnt = 0
 max_error_cnt = 15
@@ -166,10 +168,17 @@ while True:
                 print("No path path was calculated.\nUsing previous path")
 
 
-        if Wait_cone == True:
+        if Wait_cone == True and Track == False and STOP_for_orange == False:
             t3 = time.time()
             if t3 - time_for_last_cone >= 10:
                 Wait_cone = False
+                firstcone = True
+
+        if Wait_cone == True and STOP_for_orange == True:
+            t3 = time.time()
+            if t3 - time_for_last_cone >= 5:
+                Wait_cone = False
+               
 
         ################## Signe kommer her ##############
         if Wait_cone == False:
@@ -177,7 +186,7 @@ while True:
             #recieving cone positions and types
             cones_pos_type = boxes_to_cone_pos(cones,point_cloud_np)
             #Checking to see if any orange cones are detected and stops if needed
-            number_of_orange_cones, orange_seen_in_row, Wait_cone = check_for_orange_cones(cones_pos_type,Track, number_of_orange_cones, ser, servo_angle, orange_seen_in_row, Wait_cone)
+            number_of_orange_cones, orange_seen_in_row, Wait_cone, STOP_for_orange, firstcone = check_for_orange_cones(cones_pos_type,Track, number_of_orange_cones, ser, servo_angle, orange_seen_in_row, Wait_cone,STOP_for_orange,firstcone)
             
         ###################
         #print(f"number_of_orange_cones{number_of_orange_cones}")
