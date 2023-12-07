@@ -4,7 +4,7 @@ import socket
 import matplotlib.pyplot as plt
 import time
 import keyboard
-
+import os
 from matplotlib.backend_bases import MouseButton
 
 
@@ -106,18 +106,20 @@ class Lidar:
         x_array = np.array(distance_array) * np.cos(np.array(np.radians(angle_array)))
         y_array = np.array(distance_array) * np.sin(np.array(np.radians(angle_array)))
                 
-        if event.button is MouseButton.LEFT:
-            x_mouse = event.datax
-            y_mouse = event.datay
-            
-            # Calculate the distance to the closest point from the mouse
-            distance_array = []
-            for i, distance in enumerate(distance_array):
-                distance = math.sqrt((x_array[i] - x_mouse)**2 + (y_array[i] - y_mouse)**2)
-                distance_array.append(distance)
+        if event.button is MouseButton.LEFT and event.inaxes:
+            x_mouse = event.x
+            y_mouse = event.y
 
-            min_distance = min(distance_array)
-            min_distance_index = distance_array.index(min_distance)
+            x_data, y_data = ax.transData.inverted().transform((x_mouse, y_mouse))
+            print(x_data, y_data)
+            # Calculate the distance to the closest point from the mouse
+            distance_to_mouse_array = []
+            for i, distance in enumerate(distance_array):
+                distance = math.sqrt((x_array[i] - x_data)**2 + (y_array[i] - y_data)**2)
+                distance_to_mouse_array.append(distance)
+
+            min_distance = min(distance_to_mouse_array)
+            min_distance_index = distance_to_mouse_array.index(min_distance)
 
             distance_of_interest = math.sqrt((x_array[min_distance_index] - 0)**2 + (y_array[min_distance_index] - 0)**2)
                 
@@ -151,19 +153,46 @@ lidar = Lidar(lidar_address)
 fig, ax = plt.subplots()
 ax.set_aspect('equal') # Set the aspect ratio to 1
 
+
+Run_number=1
+frame_counter=1
+# Create the "DepthData" directory if it doesn't exist
+if not os.path.exists("SLAM_system/LiDAR_data/Run{}".format(Run_number)):
+    os.makedirs("SLAM_system/LiDAR_data/Run{}".format(Run_number))
+
 scan = True
+pause = True
 
 try:
     while scan:
         if keyboard.is_pressed('q'):
             plt.close('all')
             break
+        if keyboard.is_pressed('s'):
+            np.save("SLAM_system/LiDAR_data/Run{}/SICK_{}.npy".format(Run_number,frame_counter), distance_array)
+            frame_counter+=1
+        if keyboard.is_pressed('p'):
+            pause=True
+            plt.pause(0.1)
+
+        #pause the program if key 'p' is pressed
+        if pause==True:
+            print("The program is now paused until the key 'p' is pressed!")
+            while True:
+                if keyboard.is_pressed('p'):
+                    print("The key 'p' was pressed and the program is now continuing!")
+                    break
+                else:
+                    plt.pause(0.1)
+            pause=False
+        
+
 
         single_scan_data = lidar.singleScan()
 
         distance_array, angle_array = lidar.parse_data(single_scan_data)                
         
-        lidar.get_length_to_point(distance_array= distance_array, angle_array= angle_array)
+        fig.canvas.mpl_connect('button_press_event', lambda event: lidar.get_length_to_point(event, distance_array, angle_array))
 
         x_array = np.array(distance_array) * np.cos(np.array(np.radians(angle_array)))
         y_array = np.array(distance_array) * np.sin(np.array(np.radians(angle_array)))
