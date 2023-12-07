@@ -95,7 +95,7 @@ error_cnt = 0
 max_error_cnt = 15
 
 servo_angle = 95
-speed = 140
+speed = 180
 
 #--------------------- Info prints -----------------------#
 
@@ -176,10 +176,9 @@ while True:
 
         if Wait_cone == True and STOP_for_orange == True:
             t3 = time.time()
-            if t3 - time_for_last_cone >= 5:
+            if t3 - time_for_last_cone >= 3:
                 Wait_cone = False
                
-
         ################## Signe kommer her ##############
         if Wait_cone == False:
             time_for_last_cone = time.time()
@@ -189,8 +188,7 @@ while True:
             number_of_orange_cones, orange_seen_in_row, Wait_cone, STOP_for_orange, firstcone = check_for_orange_cones(cones_pos_type,Track, number_of_orange_cones, ser, servo_angle, orange_seen_in_row, Wait_cone,STOP_for_orange,firstcone)
             
         ###################
-        #print(f"number_of_orange_cones{number_of_orange_cones}")
-        #print(f"orange_seen_in_row {orange_seen_in_row}")
+        
 
 
         if servo_angle != -1:

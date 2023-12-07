@@ -85,7 +85,7 @@ def get_steering_angle(point_pos,car_length):
     steering_angle=np.arctan(car_length/radius)
     return np.rad2deg(steering_angle)
 
-def boxes_to_steering_angle(bounding_box_list,point_cloud_xyz,car_length,old_steering_angle=0,number_of_midpoints=4,weight_p0=3/5,weight_p1=1/5):
+def boxes_to_steering_angle(bounding_box_list,point_cloud_xyz,car_length,old_steering_angle=0,number_of_midpoints=2,weight_p0=3/5,weight_p1=2/5):
     #bounding_box_list=[[x1,y1,x2,y2],type] where types: 0=yellow, 1=blue, 2=orange, 3=large orange
     #point_cloud_xyz is a numpy array of shape (height,width,3) where the last dimension is the x,y,z coordinates of the point cloud
     #returns the steering angle in degrees
@@ -123,9 +123,9 @@ def boxes_to_steering_angle(bounding_box_list,point_cloud_xyz,car_length,old_ste
         angles_x.append(get_steering_angle(mid_points_next[i,:],car_length)*weight_p0)
         sum_weights+=weight_p0
         if weight_p0==3/5:
-            weight_p0=weight_p1*2
-        if i<(len(mid_points_next)-2):
-            weight_p0=weight_p0/2
+            weight_p0=weight_p1 #*2
+        #if i<(len(mid_points_next)-2):
+            #weight_p0=weight_p0/2
     steering_angle=np.sum(angles_x)
 
     #check if the steering angle is too big:

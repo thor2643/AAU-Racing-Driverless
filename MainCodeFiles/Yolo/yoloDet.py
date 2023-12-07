@@ -220,7 +220,7 @@ class YoloTRT():
         return iou
     
     def PlotBbox(self, x, img, color=None, label=None, score=None, line_thickness=None):
-        print(label)
+        #print(label)
         if label == "blue_cone":
             color = [255, 0, 0]
         elif label == "yellow_cone":
