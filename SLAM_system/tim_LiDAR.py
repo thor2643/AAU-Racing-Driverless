@@ -171,22 +171,6 @@ try:
         if keyboard.is_pressed('s'):
             np.save("SLAM_system/LiDAR_data/Run{}/SICK_{}.npy".format(Run_number,frame_counter), distance_array)
             frame_counter+=1
-        if keyboard.is_pressed('p'):
-            pause=True
-            plt.pause(0.1)
-
-        #pause the program if key 'p' is pressed
-        if pause==True:
-            print("The program is now paused until the key 'p' is pressed!")
-            while True:
-                if keyboard.is_pressed('p'):
-                    print("The key 'p' was pressed and the program is now continuing!")
-                    break
-                else:
-                    plt.pause(0.1)
-            pause=False
-        
-
 
         single_scan_data = lidar.singleScan()
 
@@ -210,6 +194,21 @@ try:
         plt.xlabel('x (mm)')
         plt.ylabel('y (mm)')
         plt.title('2D Point Cloud from LIDAR Data')
+        
+        if keyboard.is_pressed('p'):
+            pause=True
+            plt.pause(0.1)
+
+        #pause the program if key 'p' is pressed
+        if pause==True:
+            print("The program is now paused until the key 'p' is pressed!")
+            while True:
+                if keyboard.is_pressed('p'):
+                    print("The key 'p' was pressed and the program is now continuing!")
+                    break
+                else:
+                    plt.pause(0.1)
+            pause=False
 
         plt.pause(0.03)
         ax.clear()
