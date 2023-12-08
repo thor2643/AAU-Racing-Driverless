@@ -4,6 +4,8 @@ import socket
 import matplotlib.pyplot as plt
 import time
 import keyboard
+import os
+from matplotlib.backend_bases import MouseButton
 
 
 
@@ -99,6 +101,31 @@ class Lidar:
 
         # Return the distance array and the angle array
         return distance_array, angle_array
+    
+    def get_length_to_point(self, event, distance_array, angle_array):
+        x_array = np.array(distance_array) * np.cos(np.array(np.radians(angle_array)))
+        y_array = np.array(distance_array) * np.sin(np.array(np.radians(angle_array)))
+                
+        if event.button is MouseButton.LEFT and event.inaxes:
+            x_mouse = event.x
+            y_mouse = event.y
+
+            x_data, y_data = ax.transData.inverted().transform((x_mouse, y_mouse))
+            print(x_data, y_data)
+            # Calculate the distance to the closest point from the mouse
+            distance_to_mouse_array = []
+            for i, distance in enumerate(distance_array):
+                distance = math.sqrt((x_array[i] - x_data)**2 + (y_array[i] - y_data)**2)
+                distance_to_mouse_array.append(distance)
+
+            min_distance = min(distance_to_mouse_array)
+            min_distance_index = distance_to_mouse_array.index(min_distance)
+
+            distance_of_interest = math.sqrt((x_array[min_distance_index] - 0)**2 + (y_array[min_distance_index] - 0)**2)
+                
+            # Print the distance to the closest point from the mouse
+            print('Distance to closest point: ', distance_of_interest)
+
 
     # Plot the 2D point cloud using the distance values and the angles
     def plot_point_cloud(self, distance_array, angle_array):
@@ -118,83 +145,39 @@ class Lidar:
         plt.title('2D Point Cloud from LIDAR Data')
         plt.show()
 
-    def find_cones(self, distance_array, angle_array, threshold = 50):
-        x_array = distance_array * np.cos(np.radians(angle_array))
-        y_array = distance_array * np.sin(np.radians(angle_array))
-
-        # Create a list to store cluster indices
-        clusters = []
-
-        # Iterate through points
-        for i in range(len(x_array)):
-            point = (x_array[i], y_array[i])
-
-            # Check if the point is close to any existing cluster
-            found_cluster = False
-            for cluster in clusters:
-                for existing_point in cluster:
-                    distance = np.linalg.norm(np.array(point) - np.array(existing_point))
-                    if distance < threshold:
-                        cluster.append(point)
-                        found_cluster = True
-                        break
-
-            # If the point is not close to any existing cluster, create a new cluster
-            if not found_cluster:
-                clusters.append([point])
-
-        # Convert clusters to NumPy arrays for further processing if needed
-        cluster_arrays = [np.array(cluster) for cluster in clusters]
-        # print(cluster_arrays)
-
-        dist_array = []
-        final_array = []
-        for i in range(len(clusters)):
-            for j in range(len(clusters[i])):
-                distance = math.sqrt((clusters[i][j][0] - 0)**2 + (clusters[i][j][1] - 0)**2)
-                dist_array.append(distance)
-
-            minimum_val = min(dist_array)
-            for k in range(len(dist_array)):
-                if dist_array[k] == minimum_val:
-                    index = k
-
-            if i < len(clusters):
-                final_array.append(clusters[i])
-            #else:
-                #print(f"Index out of range: i={i}, index={index}, len(clusters)={len(clusters)}, len(clusters[i])={len(clusters[i]) if i < len(clusters) else 'N/A'}")
-
-        return final_array
 
 # main():
 lidar_address = ('192.168.10.28', 2112) # IP address, TCP port
 lidar = Lidar(lidar_address)
 
-#fig, ax = plt.subplots()
-fig_2, ax_2 = plt.subplots()
-#ax.set_aspect('equal') # Set the aspect ratio to 1
-ax_2.set_aspect('equal')
+fig, ax = plt.subplots()
+ax.set_aspect('equal') # Set the aspect ratio to 1
+
+
+Run_number=1
+frame_counter=1
+# Create the "DepthData" directory if it doesn't exist
+if not os.path.exists("SLAM_system/LiDAR_data/Run{}".format(Run_number)):
+    os.makedirs("SLAM_system/LiDAR_data/Run{}".format(Run_number))
+
 scan = True
+pause = True
 
 try:
     while scan:
         if keyboard.is_pressed('q'):
             plt.close('all')
             break
-        
+        if keyboard.is_pressed('s'):
+            np.save("SLAM_system/LiDAR_data/Run{}/SICK_{}.npy".format(Run_number,frame_counter), distance_array)
+            frame_counter+=1
+
         single_scan_data = lidar.singleScan()
 
-        distance_array, angle_array = lidar.parse_data(single_scan_data)
-
-        points = lidar.find_cones(distance_array, angle_array)
+        distance_array, angle_array = lidar.parse_data(single_scan_data)                
         
-        for point in points:
-            if len(point) == 1 and isinstance(point[0], tuple) and len(point[0]) == 2:
-                tuple_point = point[0]
-                ax_2.scatter(tuple_point[0], tuple_point[1], s=1)
+        fig.canvas.mpl_connect('button_press_event', lambda event: lidar.get_length_to_point(event, distance_array, angle_array))
 
-                
-           
         x_array = np.array(distance_array) * np.cos(np.array(np.radians(angle_array)))
         y_array = np.array(distance_array) * np.sin(np.array(np.radians(angle_array)))
 
@@ -204,34 +187,31 @@ try:
         #plt.axline((0, 0), (0, 1), linewidth=1, color='green')
         #plt.axline((0, 0), (1, 0), linewidth=1, color='purple')
 
-        #ax.plot(0, 0, marker="o", markersize=2, markeredgecolor="red", markerfacecolor="red")
-        ax_2.plot(0, 0, marker="o", markersize=2, markeredgecolor="red", markerfacecolor="red")
+        ax.plot(0, 0, marker="o", markersize=2, markeredgecolor="red", markerfacecolor="red")
 
         # Plot the x and y values as a scatter plot
-        #ax.scatter(x_array, y_array, s=1, c='b')
+        ax.scatter(x_array, y_array, s=1, c='b')
         plt.xlabel('x (mm)')
         plt.ylabel('y (mm)')
         plt.title('2D Point Cloud from LIDAR Data')
+        
+        if keyboard.is_pressed('p'):
+            pause=True
+            plt.pause(0.1)
+
+        #pause the program if key 'p' is pressed
+        if pause==True:
+            print("The program is now paused until the key 'p' is pressed!")
+            while True:
+                if keyboard.is_pressed('p'):
+                    print("The key 'p' was pressed and the program is now continuing!")
+                    break
+                else:
+                    plt.pause(0.1)
+            pause=False
 
         plt.pause(0.03)
-        #ax.clear()
-        ax_2.clear()
+        ax.clear()
 
 finally:
-    print("stopped")
     lidar.close()
-
-"""
-try:
-    #lidar.startMeasurement()
-    #lidar.run()
-
-    single_scan_data = lidar.singleScan()
-    print("Single Scan Data:", single_scan_data)
-    distance_array, angle_array = parse_data(single_scan_data)
-    plot_point_cloud(distance_array, angle_array)
-
-finally:
-    # Ensure to stop the continuous scan and close the connection
-    lidar.close()
-"""
