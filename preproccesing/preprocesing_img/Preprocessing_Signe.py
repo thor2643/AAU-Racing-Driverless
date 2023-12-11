@@ -428,7 +428,7 @@ def load():
         cv2.imshow("Video", frame)
         frame_number += 1
         t2 = time.time()
-        print(t2-t1)
+        print(f" FPS ={1/(t2-t1)}")
 
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):

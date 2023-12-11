@@ -345,6 +345,7 @@ def draw_cones(frame, cone_coordinates, width_height, y, Object_tracking):
             
             
 Object_tracking = False
+
 def load(Object_tracking):
     #load video from folder:
     video_folder = "processing_ZED//ZED_color_video_Run_1.avi"
@@ -373,15 +374,16 @@ def load(Object_tracking):
             else:
                 old_cone_coordinates, old_width_height = check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_width_height)        
             
-            draw_cones(frame, old_cone_coordinates, old_width_height, y, Object_tracking)
-        else:
-            draw_cones(frame, cone_coordinates, width_height, y, Object_tracking)
+            #draw_cones(frame, old_cone_coordinates, old_width_height, y, Object_tracking)
+        #else:
+            #draw_cones(frame, cone_coordinates, width_height, y, Object_tracking)
 
         #show the frames:
-        cv2.imshow("Video", frame)
-        frame_number += 1
+        #cv2.imshow("Video", frame)
         t2 = time.time()
-        print(f" FPS ={t2-t1}")
+        print(f" FPS ={1/(t2-t1)}")
+        print(cone_coordinates)
+        print(width_height)
 
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
