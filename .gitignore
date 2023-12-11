@@ -1,6 +1,7 @@
 *.json
 .vscode/
 Hog/Cones_Positive
+Hog/Test
 Hog/Cones_Negative
 preproccesing/test
 preproccesing/ZED_color_video_Run_1.avi
