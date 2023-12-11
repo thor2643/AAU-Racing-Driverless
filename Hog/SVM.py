@@ -126,7 +126,7 @@ def calculate_HOG_features_custom(img, width = 64, height = 128):
                     feature_vector[i*63 + j*9 + k] = normalized_histogram[i, j, k]
         return feature_vector
 
-def HOG_feature_extractor(input_image, useCustomHOG=True, target_width=64, target_height=128):
+def HOG_feature_extractor(input_image, useCustomHOG=False, target_width=64, target_height=128):
     if input_image is None:
         print("Failed to load or process the input image.")
         return None
@@ -318,7 +318,7 @@ def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 12
 
     return cone_locations, HighestID
  
-def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=8):
+def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=1):
     cone_locations = []
 
     Bias = 32
@@ -333,7 +333,6 @@ def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=8):
 
     # Iterate through the images and window sizes
     for s, sub_image in enumerate([top_middle, middle, bottom]):
-        
         window_size = window_sizes[s]
 
         step_size = window_size[0] // 2// step_factor
@@ -597,7 +596,7 @@ def IOU(boxA, boxB):
     # Compute the intersection over union
     Iou = interArea / Union
 
-    print("Iou: " + str(Iou))
+    #print("Iou: " + str(Iou))
     return Iou
 
 # Test Logic
@@ -616,6 +615,11 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
 
         # Detect cones in the frame
         cone_locations_HOG = HOG_predict(img, clf, False)
+        print(cone_locations_HOG)
+
+
+
+        
 
         # Initiate the state of the cones as the lenght of the cones from the annotation file
         Close_state_ann = len(Cones_from_ann) * [False]
