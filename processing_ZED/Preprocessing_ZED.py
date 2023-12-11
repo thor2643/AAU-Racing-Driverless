@@ -416,12 +416,11 @@ def IOU(boxA, boxB):
          
          
 # Test Logic
-def test_logic(Testpath_images = "preproccesing//test//FullDataset//images//test", Testpath_labels = "preproccesing//test//FullDataset//labels//test"):
+def test_logic(Testpath_images = "AAU-RACING-DRIVERLESS/Hog/Test/images/", Testpath_labels = "Hog\Test\label"):
     L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("processing_ZED//vores")
 
     # the first image in the test folder
     for images in os.listdir(Testpath_images):
-        print(images)
         # Read the image
         img = cv2.imread(Testpath_images + images)
         # Read the Annotation file one line at a time
