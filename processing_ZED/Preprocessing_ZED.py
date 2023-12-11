@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageEnhance
 import matplotlib.pyplot as plt
+import time
 
 def finds_LAB_reference_from_folder(folder):
     numb_images = 0
@@ -195,7 +196,7 @@ def create_templates():
     #cv2.imwrite("yellow_template3.jpg", yellow_template3)
     #cv2.imwrite("blue_template3.jpg", blue_template3)
 
-def template_matching(frame, y,):
+def template_matching(frame, y):
     #reading all the templates
     #yellow_template = cv2.imread("preproccesing//preprocesing_img//yellow_template.jpg")
     blue_template = cv2.imread("preproccesing//preprocesing_img//blue_template.jpg")
@@ -234,10 +235,8 @@ def template_matching(frame, y,):
         res = cv2.matchTemplate(frame_copy,template,cv2.TM_CCOEFF_NORMED)
         loc = np.where( res >= threshold)
         
-        #going throug each found location and drawing a rectangle around it,
-        # if it is not too close to another cone
+        #Sorting out the cones that are too close to each other
         for pt in zip(*loc[::-1]):
-            #sort out the ones that are too close to each other
             if cone_number[c] != 0:
                 #the following part sorts the found cones out, so that only one cone is found in each location
                 for u in range(cone_number[c]):
@@ -252,7 +251,7 @@ def template_matching(frame, y,):
                 cone_number[c] += 1
                 filtered_cones[c].append(list(pt))    
                 width_height[c].append([w, h])
-    
+        
     return frame, filtered_cones, width_height
 
 #intersection over union
@@ -324,7 +323,7 @@ def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_
     frame, cone_coordinates, width_height = template_matching(frame, y)
     return frame, cone_coordinates, width_height, y
 
-def draw_cones(frame, cone_coordinates, width_height, y):
+def draw_cones(frame, cone_coordinates, width_height, y, Object_tracking):
     #drawing the rectangles around the cones      
     for p in range (0, 2):
         next_img = 0
@@ -332,13 +331,21 @@ def draw_cones(frame, cone_coordinates, width_height, y):
             color = (255, 0, 0)
         else:
             color = (0, 255, 255)
-        for idx, pt in enumerate(cone_coordinates[p]):
-            #put text on the cones´ rectangles
-            cv2.putText(frame, str(idx), (pt[0], pt[1] + y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-            cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
-            next_img += 1
-
-def load():
+        if Object_tracking == True:
+            for idx, pt in enumerate(cone_coordinates[p]):
+                #put text on the cones´ rectangles
+                cv2.putText(frame, str(idx), (pt[0], pt[1] + y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
+                next_img += 1
+        else:
+            for pt in cone_coordinates[p]:
+                cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
+                next_img += 1
+            
+            
+            
+Object_tracking = False
+def load(Object_tracking):
     #load video from folder:
     video_folder = "processing_ZED//ZED_color_video_Run_1.avi"
     cap = cv2.VideoCapture(video_folder)
@@ -346,6 +353,7 @@ def load():
     frame_number = 0
     
     while True:
+        t1 = time.time()
         frame_number += 1
         # Read the frames of the video
         ret , frame = cap.read()    
@@ -354,21 +362,26 @@ def load():
             break
         
         frame, cone_coordinates, width_height, y = preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
-        #makes sure that there are a counting entry for each cone
-        for i in range(0, 2):
-                for j in range(0, len(cone_coordinates[i])):
-                    cone_coordinates[i][j].append(0)
-                    
-        if frame_number == 1:
-            old_cone_coordinates, old_width_height = cone_coordinates.copy(), width_height.copy()
+        if Object_tracking == True:
+            #makes sure that there are a counting entry for each cone
+            for i in range(0, 2):
+                    for j in range(0, len(cone_coordinates[i])):
+                        cone_coordinates[i][j].append(0)
+                        
+            if frame_number == 1:
+                old_cone_coordinates, old_width_height = cone_coordinates.copy(), width_height.copy()
+            else:
+                old_cone_coordinates, old_width_height = check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_width_height)        
+            
+            draw_cones(frame, old_cone_coordinates, old_width_height, y, Object_tracking)
         else:
-            old_cone_coordinates, old_width_height = check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_width_height)        
-        
-        draw_cones(frame, old_cone_coordinates, old_width_height, y)
+            draw_cones(frame, cone_coordinates, width_height, y, Object_tracking)
+
         #show the frames:
         cv2.imshow("Video", frame)
         frame_number += 1
-    
+        t2 = time.time()
+        print(f" FPS ={t2-t1}")
 
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -377,4 +390,4 @@ def load():
     cap.release()
     cv2.destroyAllWindows()
     
-load()
+load(Object_tracking)

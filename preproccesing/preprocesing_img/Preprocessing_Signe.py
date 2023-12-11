@@ -404,6 +404,7 @@ def load():
     frame_number = 0
     
     while True:
+        t1 = time.time()
         frame_number += 1
         # Read the frames of the video
         ret , frame = cap.read()    
@@ -426,7 +427,8 @@ def load():
         #show the frames:
         cv2.imshow("Video", frame)
         frame_number += 1
-    
+        t2 = time.time()
+        print(t2-t1)
 
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
