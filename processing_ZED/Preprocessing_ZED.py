@@ -348,14 +348,17 @@ def convert_array(cone_coordinates, width_height):
          
 def IOU(boxA, boxB):
     # Extract the coordinates of the boxes
-    xA = max(boxA[0], boxB[0])
-    yA = min(boxA[1], boxB[1])
-    xB = min(boxA[2], boxB[2])
-    yB = max(boxA[3], boxB[3])
+    x0A, y0A, x1A, y1A = boxA
+    x0B, y0B, x1B, y1B = boxB
     
+    # Determine the (x, y)-coordinates of the intersection rectangle
+    l_x = max(x0A, x0B)
+    r_x = min(x1A, x1B)
+    t_y = max(y0A, y0B)
+    b_y = min(y1A, y1B)
+
     # Compute the area of intersection rectangle
-    interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
-    print("interArea:", interArea)
+    interArea = max(0, r_x - l_x) * max(0, b_y - t_y)
     
     # If the area is non-positive, the boxes don't intersect
     if interArea <= 0:
@@ -363,15 +366,19 @@ def IOU(boxA, boxB):
         return Iou
 
     # Compute the area of both rectangles
-    boxAArea = abs((boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1))
-    boxBArea = abs((boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1))
+    area_box_a = abs(x1A - x0A) * abs(y1A - y0A)
+    area_box_b = abs(x1B - x0B) * abs(y1B - y0B)
 
-    # Compute the union area
-    Union = boxAArea + boxBArea - interArea
+    # Compute the intersection over union
+    Union = area_box_a + area_box_b - interArea
+
+    if interArea > area_box_a + area_box_b:
+        print("Error: wtf")
 
     # Compute the intersection over union
     Iou = interArea / Union
 
+    #print("Iou: " + str(Iou))
     return Iou
          
 # Test Logic
@@ -383,10 +390,6 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
         print("new image")
         # Read the image
         
-        Testpath_images = "Hog/Test/images/"
-        Testpath_labels = "Hog/Test/label/"
-        images = "amz_01361.png"
-
         img = cv2.imread(Testpath_images + images)
         # Read the Annotation file one line at a time
         

@@ -601,7 +601,7 @@ def IOU(boxA, boxB):
 
     #print("Iou: " + str(Iou))
     return Iou
-
+ 
 # Test Logic
 def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test/label/"):
     # Load the SVM model
