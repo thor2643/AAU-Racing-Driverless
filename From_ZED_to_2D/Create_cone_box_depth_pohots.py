@@ -3,8 +3,8 @@ import cv2
 import os
 
 #parameters:
-run_number = 1
-frame_number = 1
+run_number = 4
+frame_number = 2
 
 #path to data files
 data_photos_path="C:\\Users\\3103e\Documents\\GitHub\\AAU-Racing-Driverless\\From_ZED_to_2D\\ZED_Photos_with_depth\\Run{}".format(run_number)
@@ -66,7 +66,7 @@ def display_frame_from_point_cloud_with_boxes_and_return_cone_pos(depth_arr_from
     img_point_cloud_BGRA = np.frombuffer(img_point_cloud_bytes, dtype=np.uint8).reshape(img_point_cloud_float.shape + (4,))
 
     point_cloud_frame=cv2.cvtColor(img_point_cloud_BGRA, cv2.COLOR_BGRA2RGBA)
-
+    
     cones_pos_type=[]
     for i in range(len(coords)):
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -80,8 +80,8 @@ def display_frame_from_point_cloud_with_boxes_and_return_cone_pos(depth_arr_from
         new_x_pixel_max=int(-1*(x_pixel_max-x_pixel_min)*1/3+x_pixel_max)
         cv2.rectangle(point_cloud_frame, (x_pixel_min, y_pixel_max), (x_pixel_max, y_pixel_min), (0, 255, 255), 2)
         cv2.rectangle(point_cloud_frame, (new_x_pixel_min, y_pixel_max), (new_x_pixel_max, new_y_pixel_min), (0, 255, 0), 2)
-        x_cone_pos=np.median(depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,0])
-        y_cone_pos=np.median(np.sqrt(depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,1]**2+depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,2]**2))
+        x_cone_pos=np.nanmedian(depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,0])
+        y_cone_pos=np.nanmedian(np.sqrt(depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,1]**2+depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,2]**2))
         cone_pos.append([x_cone_pos,y_cone_pos])
         print(f"Cone {i}: x={x_cone_pos}, y={y_cone_pos}")
         cv2.putText(point_cloud_frame, f"{i}", (x_pixel_max, y_pixel_min), font, 0.5, (0, 255, 0), 2)
@@ -95,6 +95,7 @@ def display_frame_from_point_cloud_with_boxes_and_return_cone_pos(depth_arr_from
 coords=[]
 cone_pos=[]
 
+print(f"Run {run_number}, Frame {frame_number}:")
 display_photo(img, frame_number)
 #coords=[[[109, 489], [172, 421]], [[1062, 491], [1019, 430]], [[850, 431], [830, 402]], [[426, 426], [403, 394]], [[469, 407], [483, 387]], [[751, 412], [763, 393]], [[734, 402], [724, 387]], [[520, 399], [507, 383]]]
 cone_pos=display_frame_from_point_cloud_with_boxes_and_return_cone_pos(depth_arr,cone_pos)
