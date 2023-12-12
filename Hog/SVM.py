@@ -318,7 +318,7 @@ def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 12
 
     return cone_locations, HighestID
  
-def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=1):
+def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=1, ):
     cone_locations = []
 
     Bias = 32
@@ -573,13 +573,13 @@ def IOU(boxA, boxB):
     x0B, y0B, x1B, y1B = boxB
     
     # Determine the (x, y)-coordinates of the intersection rectangle
-    r_x = max(x0A, x0B)
+    l_x = max(x0A, x0B)
+    r_x = min(x1A, x1B)
     t_y = max(y0A, y0B)
-    l_x = min(x1A, x1B)
     b_y = min(y1A, y1B)
 
     # Compute the area of intersection rectangle
-    interArea = max(0, l_x - r_x) * max(0, t_y - b_y )
+    interArea = max(0, r_x - l_x) * max(0, b_y - t_y)
     
     # If the area is non-positive, the boxes don't intersect
     if interArea <= 0:
@@ -587,11 +587,14 @@ def IOU(boxA, boxB):
         return Iou
 
     # Compute the area of both rectangles
-    area_box_a = (x1A - x0A) * (y1A - y0A)
-    area_box_b = (x1B - x0B) * (y1B - y0B)
+    area_box_a = abs(x1A - x0A) * abs(y1A - y0A)
+    area_box_b = abs(x1B - x0B) * abs(y1B - y0B)
 
     # Compute the intersection over union
     Union = area_box_a + area_box_b - interArea
+
+    if interArea > area_box_a + area_box_b:
+        print("Error: wtf")
 
     # Compute the intersection over union
     Iou = interArea / Union
@@ -615,11 +618,6 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
 
         # Detect cones in the frame
         cone_locations_HOG = HOG_predict(img, clf, False)
-        print(cone_locations_HOG)
-
-
-
-        
 
         # Initiate the state of the cones as the lenght of the cones from the annotation file
         Close_state_ann = len(Cones_from_ann) * [False]
@@ -633,15 +631,16 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
 
                 # Extracting coordinates for cone A
                 x0A = max(cone[2][0] - cone[4][0] // 2, 0)
-                y0A = max(cone[2][1] + cone[4][1] // 2, 0)
+                y0A = max(cone[2][1] - cone[4][1] // 2, 0)
                 x1A = max(cone[2][0] + cone[4][0] // 2, 0)
-                y1A = max(cone[2][1] - cone[4][1] // 2, 0)
+                y1A = max(cone[2][1] + cone[4][1] // 2, 0)
 
                 # Extracting coordinates for cone B
                 x0B = max(cone_from_ann[0][0] - cone_from_ann[1][0] // 2, 0)
-                y0B = max(cone_from_ann[0][1] + cone_from_ann[1][1] // 2, 0)
+                y0B = max(cone_from_ann[0][1] - cone_from_ann[1][1] // 2, 0)
                 x1B = max(cone_from_ann[0][0] + cone_from_ann[1][0] // 2, 0)
-                y1B = max(cone_from_ann[0][1] - cone_from_ann[1][1] // 2, 0)
+                y1B = max(cone_from_ann[0][1] + cone_from_ann[1][1] // 2, 0)
+                
 
                 # Calculate the intersection over union
                 Iou = IOU((x0A, y0A, x1A, y1A), (x0B, y0B, x1B, y1B))
