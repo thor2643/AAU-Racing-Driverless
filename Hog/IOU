@@ -1,0 +1,34 @@
+def IOU(boxA, boxB):
+    # Extract the coordinates of the boxes
+    xA = max(boxA[0], boxB[0])
+    yA = min(boxA[1], boxB[1])
+    xB = min(boxA[2], boxB[2])
+    yB = max(boxA[3], boxB[3])
+    
+    # Compute the area of intersection rectangle
+    interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+    print("interArea:", interArea)
+    
+    # If the area is non-positive, the boxes don't intersect
+    if interArea <= 0:
+        Iou = 0
+        return Iou
+
+    # Compute the area of both rectangles
+    boxAArea = abs((boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1))
+    boxBArea = abs((boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1))
+
+    # Compute the union area
+    Union = boxAArea + boxBArea - interArea
+
+    # Compute the intersection over union
+    Iou = interArea / Union
+
+    return Iou
+
+# Test with the provided input
+boxA = [37, 67, 63, 104]
+boxB = [37, 104, 69, 68]
+iou_value = IOU(boxA, boxB)
+
+print("IoU:", iou_value)

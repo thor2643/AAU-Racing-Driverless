@@ -44,45 +44,6 @@ def finds_LAB_reference_from_folder(folder):
     B_s_std = B_s_std / numb_images
     return L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std
 
-def remove_all_but_concrete( img1):
-    img = img1.copy()
-    lower_HSV = [0, 0, 72]
-    upper_HSV= [200, 80, 100]
-    lower_HSV = np.array(lower_HSV, dtype=np.uint8)  # Convert to NumPy array
-    upper_HSV = np.array(upper_HSV, dtype=np.uint8)  # 1Convert to NumPy array
-
-    # 1. Convert the image to HSV color space
-    HSV_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    # 2. Apply HSV thresholding to find concrete areas
-    HSV_mask = cv2.inRange(HSV_img, lower_HSV, upper_HSV)
-    
-    # 3. Find contours in the binary mask
-    contours, _ = cv2.findContours(HSV_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # 4. Initialize variables to keep track of the largest blob and its bounding box
-    largest_blob = None
-    largest_area = 0
-
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        if area > largest_area:
-            largest_area = area
-            largest_blob = contour
-
-    if largest_area > 5000:
-        return 0
-
-
-    if largest_blob is not None:
-        # 5. Get the bounding box of the largest blob
-        _ , y, _, _ = cv2.boundingRect(largest_blob)
-
-        # 6. Crop the original image using the bounding box
-        #concrete_area = img[y-5:y+5+h, x:x+w]
-        
-        return y
-
 def color_transfer(processed_img, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std):
     #convert the images from RGB to LAB
     img_target = cv2.cvtColor(processed_img, cv2.COLOR_BGR2LAB).astype("float32")
@@ -196,16 +157,20 @@ def create_templates():
     #cv2.imwrite("yellow_template3.jpg", yellow_template3)
     #cv2.imwrite("blue_template3.jpg", blue_template3)
 
-def template_matching(frame, y):
+def template_matching(frame):
     #reading all the templates
-    #yellow_template = cv2.imread("preproccesing//preprocesing_img//yellow_template.jpg")
+    yellow_template = cv2.imread("preproccesing//preprocesing_img//yellow_template.jpg")
     blue_template = cv2.imread("preproccesing//preprocesing_img//blue_template.jpg")
     yellow_template1 = cv2.imread("preproccesing//preprocesing_img//yellow_template1.jpg")
     blue_template1 = cv2.imread("preproccesing//preprocesing_img//blue_template1.jpg")
     yellow_template2 = cv2.imread("preproccesing//preprocesing_img//yellow_template2.jpg")
     blue_template2 = cv2.imread("preproccesing//preprocesing_img//blue_template2.jpg")
-    yellow_template3 = cv2.imread("preproccesing//preprocesing_img//yellow_template3.jpg")
+    #yellow_template3 = cv2.imread("preproccesing//preprocesing_img//yellow_template3.jpg")
     #blue_template3 = cv2.imread("preproccesing//preprocesing_img//blue_template3.jpg")
+    
+    #create a bigger template for the blue and yellow cones
+    yellow_template3 = cv2.resize(yellow_template1, (int(26 * 1.5), int(37 * 1.5)))
+    blue_template3 = cv2.resize(blue_template, (int(37 * 1.25), int(55 * 1.25)))
     
     #Variables
     c = 0
@@ -218,18 +183,16 @@ def template_matching(frame, y):
     i = 0
     threshold = 0.6
     
-    #size of the frame
-    frame_height, frame_width = frame.shape[:2]
+    
+    frame_copy = frame.copy()
     #resizing the frame to make cumputations faster
-    frame_copy = frame[y : frame_height , 0 : frame_width]
     #yellow_template blue_template3
-    template = [yellow_template1, yellow_template2, yellow_template3, blue_template ,blue_template1, blue_template2]
+    template = [yellow_template, yellow_template1, yellow_template2, yellow_template3, blue_template ,blue_template1, blue_template2, blue_template3]
     
     for i, template in enumerate(template):
-        if i == 3:
+        if i == 4:
             c = 1
             new_cone = True
-            threshold = 0.65
                 
         w, h = template.shape[1], template.shape[0]
         res = cv2.matchTemplate(frame_copy,template,cv2.TM_CCOEFF_NORMED)
@@ -313,17 +276,19 @@ def check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_wi
     return old_cone_coordinates, old_width_height
 
 def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std):
+    t1 = time.time()
     frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
     frame_yellow = color_enhancement(frame)
-    y = remove_all_but_concrete(frame_yellow)
     frame_blue = frame_yellow.copy()
     frame_yellow = find_yellow(frame_yellow)
     frame_blue = find_blue(frame_blue)
     frame = cv2.add(frame_yellow, frame_blue)            
-    frame, cone_coordinates, width_height = template_matching(frame, y)
-    return frame, cone_coordinates, width_height, y
+    frame, cone_coordinates, width_height = template_matching(frame)
+    t2 = time.time()
+    print(f"FPS = {1/(t2-t1)}")
+    return frame, cone_coordinates, width_height
 
-def draw_cones(frame, cone_coordinates, width_height, y, Object_tracking):
+def draw_cones(frame, cone_coordinates, width_height, Object_tracking):
     #drawing the rectangles around the cones      
     for p in range (0, 2):
         next_img = 0
@@ -334,12 +299,12 @@ def draw_cones(frame, cone_coordinates, width_height, y, Object_tracking):
         if Object_tracking == True:
             for idx, pt in enumerate(cone_coordinates[p]):
                 #put text on the cones´ rectangles
-                cv2.putText(frame, str(idx), (pt[0], pt[1] + y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
+                cv2.putText(frame, str(idx), (pt[0], pt[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                cv2.rectangle(frame, (pt[0], pt[1]), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1]), color, 2)
                 next_img += 1
         else:
             for pt in cone_coordinates[p]:
-                cv2.rectangle(frame, (pt[0], pt[1] + y), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1] + y), color, 2)
+                cv2.rectangle(frame, (pt[0], pt[1]), (pt[0] + width_height[p][next_img][0], pt[1] + width_height[p][next_img][1]), color, 2)
                 next_img += 1
 
 def ReadAnnotationFile(img, image_name, Testpath_labels):
@@ -373,28 +338,24 @@ def ReadAnnotationFile(img, image_name, Testpath_labels):
 def convert_array(cone_coordinates, width_height):
     #converting the coordinates to the same format as the ones from the annotation file
     con_pos_wh_color = []
-    cone = []
     color = ["blue", "yellow"]
     for p in range(0, 2):
         for q in range(0, len(cone_coordinates[p])):
-            cone.append((cone_coordinates[p][q], width_height[p][q], color[p])) 
+            cone=[cone_coordinates[p][q], width_height[p][q], color[p]]
             con_pos_wh_color.append(cone)
     
     return con_pos_wh_color      
          
 def IOU(boxA, boxB):
     # Extract the coordinates of the boxes
-    x0A, y0A, x1A, y1A = boxA
-    x0B, y0B, x1B, y1B = boxB
+    xA = max(boxA[0], boxB[0])
+    yA = min(boxA[1], boxB[1])
+    xB = min(boxA[2], boxB[2])
+    yB = max(boxA[3], boxB[3])
     
-    # Determine the (x, y)-coordinates of the intersection rectangle
-    r_x = max(x0A, x0B)
-    t_y = max(y0A, y0B)
-    l_x = min(x1A, x1B)
-    b_y = min(y1A, y1B)
-
     # Compute the area of intersection rectangle
-    interArea = max(0, l_x - r_x) * max(0, t_y - b_y )
+    interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+    print("interArea:", interArea)
     
     # If the area is non-positive, the boxes don't intersect
     if interArea <= 0:
@@ -402,60 +363,67 @@ def IOU(boxA, boxB):
         return Iou
 
     # Compute the area of both rectangles
-    area_box_a = (x1A - x0A) * (y1A - y0A)
-    area_box_b = (x1B - x0B) * (y1B - y0B)
+    boxAArea = abs((boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1))
+    boxBArea = abs((boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1))
 
-    # Compute the intersection over union
-    Union = area_box_a + area_box_b - interArea
+    # Compute the union area
+    Union = boxAArea + boxBArea - interArea
 
     # Compute the intersection over union
     Iou = interArea / Union
 
-    print("Iou: " + str(Iou))
     return Iou
          
-         
 # Test Logic
-def test_logic(Testpath_images = "AAU-RACING-DRIVERLESS/Hog/Test/images/", Testpath_labels = "Hog\Test\label"):
+def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test/label/"): #Hog\Test\images\amz_01361.png #
     L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("processing_ZED//vores")
 
     # the first image in the test folder
     for images in os.listdir(Testpath_images):
+        print("new image")
         # Read the image
+        
+        Testpath_images = "Hog/Test/images/"
+        Testpath_labels = "Hog/Test/label/"
+        images = "amz_01361.png"
+
         img = cv2.imread(Testpath_images + images)
         # Read the Annotation file one line at a time
-
+        
         Cones_from_ann = ReadAnnotationFile(img, images, Testpath_labels)
+        print(f"Cones_from_ann: {Cones_from_ann}")
 
-        _, cone_coordinates, width_height, _ = preprocess_image(img, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
+        _, cone_coordinates, width_height = preprocess_image(img, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
 
         # Detect cones in the frame
-        cone_locations_HOG = convert_array(cone_coordinates, width_height)
+        cone_locations_pre = convert_array(cone_coordinates, width_height)
 
         # Initiate the state of the cones as the lenght of the cones from the annotation file
         Close_state_ann = len(Cones_from_ann) * [False]
-        close_state_hog = len(cone_locations_HOG) * [False]
+        close_state_hog = len(cone_locations_pre) * [False]
 
-        # Run a intersection over union check to see if the cones are close to each other - THIS IS OLD CODE
-        for cone in cone_locations_HOG:
+        # Run a intersection over union check to see if the cones are close to each other
+        for cone in cone_locations_pre:
             close_cones = []
             for i, cone_from_ann in enumerate(Cones_from_ann):
                 # Extract the coordinates of the boxes
-
+                              
+                
                 # Extracting coordinates for cone A
-                x0A = max(cone[2][0] - cone[4][0] // 2, 0)
-                y0A = max(cone[2][1] + cone[4][1] // 2, 0)
-                x1A = max(cone[2][0] + cone[4][0] // 2, 0)
-                y1A = max(cone[2][1] - cone[4][1] // 2, 0)
+                x0A = max(cone[0][0],0)
+                y0A = max(cone[0][1], 0)
+                x1A = max(cone[0][0]+cone[1][0], 0)
+                y1A = max(cone[0][1]+cone[1][1], 0)
 
                 # Extracting coordinates for cone B
                 x0B = max(cone_from_ann[0][0] - cone_from_ann[1][0] // 2, 0)
-                y0B = max(cone_from_ann[0][1] + cone_from_ann[1][1] // 2, 0)
+                y0B = max(cone_from_ann[0][1] - cone_from_ann[1][1] // 2, 0)
                 x1B = max(cone_from_ann[0][0] + cone_from_ann[1][0] // 2, 0)
-                y1B = max(cone_from_ann[0][1] - cone_from_ann[1][1] // 2, 0)
+                y1B = max(cone_from_ann[0][1] + cone_from_ann[1][1] // 2, 0)
 
                 # Calculate the intersection over union
                 Iou = IOU((x0A, y0A, x1A, y1A), (x0B, y0B, x1B, y1B))
+                print("Iou: " + str(Iou))
 
                 if Iou >= 0.5:
                     # If the cones are close to each other, save the index, and the IOU value. Only the closest cone will be saved
@@ -464,7 +432,7 @@ def test_logic(Testpath_images = "AAU-RACING-DRIVERLESS/Hog/Test/images/", Testp
             # If there are any close cones, save the closest one
             if close_cones:
                 # Mark hog cone as found
-                close_state_hog[cone_locations_HOG.index(cone)] = True
+                close_state_hog[cone_locations_pre.index(cone)] = True
 
                 # Sort the list of close cones by IOU value
                 close_cones.sort(key=lambda x: x[1], reverse=True)
@@ -475,7 +443,9 @@ def test_logic(Testpath_images = "AAU-RACING-DRIVERLESS/Hog/Test/images/", Testp
         true_positives = close_state_hog.count(True)
         false_positives = close_state_hog.count(False)
         false_negatives = Close_state_ann.count(False)
-
+        Recall=0
+        Precision=0
+         
         # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
         if true_positives + false_positives == 0:
             Precision = 0
@@ -484,8 +454,6 @@ def test_logic(Testpath_images = "AAU-RACING-DRIVERLESS/Hog/Test/images/", Testp
         else:
             Recall = true_positives/ (true_positives + false_negatives)
             Precision = true_positives / (true_positives + false_positives)   
-
-        print(Recall)
 
         print("Recall: " + str(Recall))
         print("Precision: " + str(Precision))
@@ -499,8 +467,8 @@ def test_logic(Testpath_images = "AAU-RACING-DRIVERLESS/Hog/Test/images/", Testp
             cv2.rectangle(img, (cone[0][0] - cone[1][0]//2 , cone[0][1] - cone[1][1]//2), (cone[0][0] + cone[1][0]//2, cone[0][1] + cone[1][1]//2), color, 2)         
 
         # Draw all the cones found 
-        for cone in cone_locations_HOG:
-            cv2.rectangle(img, (cone[2][0] - cone[4][0]//2, cone[2][1] - cone[4][1]//2), (cone[2][0] + cone[4][0]//2, cone[2][1] + cone[4][1]//2), (255, 0, 0), 2)
+        for cone in cone_locations_pre:
+            cv2.rectangle(img, (cone[0][0], cone[0][1]), (cone[0][0] + cone[1][0], cone[0][1] + cone[1][1]), (255, 0, 0), 2)
 
         # Display the frame - rezie the image to fit the screen
         img = cv2.resize(img, (1080, 720))
