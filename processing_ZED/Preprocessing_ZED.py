@@ -125,79 +125,124 @@ def find_blue(processed_img):
     # Bitwise-AND mask and original image
     temp_img = cv2.bitwise_and(processed_img, processed_img, mask=mask) 
     return temp_img
+    
+def create_templates2():
+       #reading all the templates
+    blue_template_start = cv2.imread("preproccesing//preprocesing_img//blue_template.jpg")
+    yellow_template_start = cv2.imread("preproccesing//preprocesing_img//yellow_template1.jpg")
+    #making the yellow template the same size as the blue template
+    yellow_template_start = cv2.resize(yellow_template_start, (int(37), int(55)))
+    
+    #creating the templates with different sizes
+    blue_template = cv2.resize(blue_template_start, (int(37* 3.75), int(55*3.75)))
+    yellow_template = cv2.resize(yellow_template_start, (int(37* 3.75), int(55*3.75)))
+    
+    blue_template1 = cv2.resize(blue_template_start, (int(37* 2.75), int(55*2.75)))
+    yellow_template1 = cv2.resize(yellow_template_start, (int(37* 2.75), int(55*2.75)))
+    
+    blue_template2 = cv2.resize(blue_template_start, (int(37* 1.75), int((55* 1.75)*2)))
+    yellow_template2 = cv2.resize(yellow_template_start, (int(37*1.75), int((55*1.75)*2)))
+   
+    blue_template3 = cv2.resize(blue_template_start, (int(37* 2.25), int(55*2.25)))
+    yellow_template3 = cv2.resize(yellow_template_start, (int(37* 2.75), int(55*2.75)))
+    
+    blue_template4 = cv2.resize(blue_template_start, (int(37* 1.3), int((55* 1.3)*2)))
+    yellow_template4 = cv2.resize(yellow_template_start, (int(37*1.3), int((55*1.3)*2))) 
+    
+    blue_template5 = cv2.resize(blue_template_start, (int(37* 1.75), int(55*1.75)))
+    yellow_template5 = cv2.resize(yellow_template_start, (int(37* 1.75), int(55*1.75)))
+    
+    blue_template6 = cv2.imread("preproccesing//preprocesing_img//blue_template1.jpg")
+    yellow_template6 = cv2.imread("preproccesing//preprocesing_img//yellow_template.jpg")
+    
+    blue_template7 = cv2.resize(blue_template_start, (int(37* 1), int((55* 1)*2)))
+    yellow_template7 = cv2.resize(yellow_template_start, (int(37*1), int((55*1)*2))) 
+    
+    blue_template8 = cv2.resize(blue_template_start, (int(37* 1.25), int(55*1.25)))
+    yellow_template8 = cv2.resize(yellow_template_start, (int(37* 1.25), int(55*1.25)))
+    
+    blue_template9 = cv2.resize(blue_template_start, (int(37* 0.75), int((55* 0.75)*2)))
+    yellow_template9 = cv2.resize(yellow_template_start, (int(37*0.75), int((55*0.75)*2)))
+    
+    blue_template10 = cv2.resize(blue_template_start, (int(37* 0.75), int(55*0.75)))
+    yellow_template10 = cv2.resize(yellow_template_start, (int(37* 0.75), int(55*0.75)))
+    
+    blue_template11 = cv2.imread("preproccesing//preprocesing_img//blue_template2.jpg")
+    yellow_template11 = cv2.imread("preproccesing//preprocesing_img//yellow_template2.jpg")
+    
+    blue_template12 = cv2.resize(blue_template_start, (int(37* 0.5), int(55*0.5)))
+    yellow_template12 = cv2.resize(yellow_template_start, (int(37* 0.5), int(55*0.5)))
+    
+    blue_template13 = cv2.imread("preproccesing//preprocesing_img//blue_template3.jpg")
+    yellow_template13 = cv2.imread("preproccesing//preprocesing_img//yellow_template3.jpg")
+    
+    blue_template14 = blue_template_start.copy()
+    yellow_template14 = yellow_template_start.copy()
 
-def create_templates():
-    frame = cv2.imread("preproccesing//frame.jpg")
-    #frame = cv2.imread("preproccesing//frame1 15 .jpg")
-    #cutting both templates out of the frame
-    blue_template = frame[270:325, 35:72]
-    yellow_template = frame[268:305, 560:586]
     
+    templates = [yellow_template, yellow_template1, yellow_template2, yellow_template3, yellow_template4, yellow_template5, yellow_template6, yellow_template7, yellow_template8, yellow_template9, yellow_template10, yellow_template11, yellow_template12, yellow_template13, yellow_template14, blue_template, blue_template1, blue_template2, blue_template3, blue_template4, blue_template5, blue_template6, blue_template7, blue_template8, blue_template9, blue_template10, blue_template11, blue_template12, blue_template13, blue_template14]
     
-    
-    #make the templates smaller to matcg the size of the cones
-    yellow_template1 = cv2.resize(yellow_template, (int(26 * 1.25), int(37 * 1.25)))
-    blue_template1 = cv2.resize(blue_template, (int(37 * 0.6), int(55 * 0.6)))
-    yellow_template2 = cv2.resize(yellow_template, (int(26 * 0.6), int(37 * 0.6)))
-    blue_template2 = cv2.resize(blue_template, (int(22 * 0.6), int(33 * 0.6)))
-    yellow_template3 = cv2.resize(yellow_template, (int(15 * 0.6), int(22 * 0.6)))
-    blue_template3 = cv2.resize(blue_template, (int(13 * 0.6), int(19 * 0.6)))
-    blue_template = cv2.resize(blue_template, (int(37 * 0.80), int(55 * 0.8)))
-    
-    
+    return templates
 
-    # Save image to directory
-    #cv2.imwrite("yellow_template.jpg", yellow_template)
-    cv2.imwrite("blue_template.jpg", blue_template)
-    # cv2.imwrite("yellow_template.jpg", yellow_template)
-    #cv2.imwrite("yellow_template1.jpg", yellow_template1)
-    #cv2.imwrite("blue_template1.jpg", blue_template1)
-    #cv2.imwrite("yellow_template2.jpg", yellow_template2)
-    #cv2.imwrite("blue_template2.jpg", blue_template2)
-    #cv2.imwrite("yellow_template3.jpg", yellow_template3)
-    #cv2.imwrite("blue_template3.jpg", blue_template3)
-
-def template_matching(frame):
-    #reading all the templates
-    yellow_template = cv2.imread("preproccesing//preprocesing_img//yellow_template.jpg")
-    blue_template = cv2.imread("preproccesing//preprocesing_img//blue_template.jpg")
-    yellow_template1 = cv2.imread("preproccesing//preprocesing_img//yellow_template1.jpg")
-    blue_template1 = cv2.imread("preproccesing//preprocesing_img//blue_template1.jpg")
-    yellow_template2 = cv2.imread("preproccesing//preprocesing_img//yellow_template2.jpg")
-    blue_template2 = cv2.imread("preproccesing//preprocesing_img//blue_template2.jpg")
-    #yellow_template3 = cv2.imread("preproccesing//preprocesing_img//yellow_template3.jpg")
-    #blue_template3 = cv2.imread("preproccesing//preprocesing_img//blue_template3.jpg")
-    
-    #create a bigger template for the blue and yellow cones
-    yellow_template3 = cv2.resize(yellow_template1, (int(26 * 1.5), int(37 * 1.5)))
-    blue_template3 = cv2.resize(blue_template, (int(37 * 1.25), int(55 * 1.25)))
-    
+def template_matching(frame, templates):
     #Variables
     c = 0
     cone_number = [(0),(0)]
-    allowed_distance=20   #pixels
+    allowed_distance=50   #pixels
     new_cone = True
     distance=0
     filtered_cones= [[], []]
     width_height = [[],[]]
-    i = 0
-    threshold = 0.6
-    
+    i = 0  
+    thresholds_for_detections = []
     
     frame_copy = frame.copy()
-    #resizing the frame to make cumputations faster
-    #yellow_template blue_template3
-    template = [yellow_template, yellow_template1, yellow_template2, yellow_template3, blue_template ,blue_template1, blue_template2, blue_template3]
-    
-    for i, template in enumerate(template):
-        if i == 4:
+   
+    for i, template in enumerate(templates):
+        if i >= 10:
+            threshold = 0.65
+        else:
+            threshold = 0.5
+        if i == len(templates)/2:
             c = 1
             new_cone = True
                 
         w, h = template.shape[1], template.shape[0]
-        res = cv2.matchTemplate(frame_copy,template,cv2.TM_CCOEFF_NORMED)
+        res = cv2.matchTemplate(frame_copy,template,cv2.TM_CCOEFF_NORMED)  
         loc = np.where( res >= threshold)
+        # Iterate through the detections and store the threshold value for each
+        for pt in zip(*loc[::-1]):
+            threshold_value = res[pt[1], pt[0]]  # Get the threshold value at the detection point
+            thresholds_for_detections.append(threshold_value)
         
+        #Sorting out the cones that are too close to each other based on the threshold value
+        for a, pt in enumerate(zip(*loc[::-1])):
+            if cone_number[c] != 0:
+                #the following part sorts the found cones out, so that only one cone is found in each location
+                for u in range(cone_number[c]):
+                    distance = np.sqrt((pt[0] - filtered_cones[c][u][0]) ** 2 + (pt[1] - filtered_cones[c][u][1]) ** 2)
+                    if distance > allowed_distance:
+                        new_cone = True
+                    elif distance < allowed_distance and thresholds_for_detections[a] < filtered_cones[c][u][2]:
+                        new_cone = False
+                        break #it stops looking
+                    elif distance < allowed_distance and thresholds_for_detections[a] >= filtered_cones[c][u][2]:
+                        #if the new cone has a better threshold than the old one, the old one is replaced
+                        del filtered_cones[c][u]
+                        del width_height[c][u]
+                        cone_number[c] -= 1
+                        new_cone = True
+                        break #it stops looking
+                        
+            if new_cone == True:
+                cone_number[c] += 1
+                ptk = [pt[0], pt[1], thresholds_for_detections[a]]
+                filtered_cones[c].append(ptk)
+                width_height[c].append([w, h])
+                    
+    return frame, filtered_cones, width_height 
+
+"""
         #Sorting out the cones that are too close to each other
         for pt in zip(*loc[::-1]):
             if cone_number[c] != 0:
@@ -208,14 +253,19 @@ def template_matching(frame):
                         new_cone = True
                     else:
                         new_cone = False
-                        break #it stops looking
-                    
+                        break #it stops looking   
+                     
             if new_cone == True:
                 cone_number[c] += 1
-                filtered_cones[c].append(list(pt))    
+                filtered_cones[c].append(pt)
                 width_height[c].append([w, h])
-        
+                
     return frame, filtered_cones, width_height
+                
+"""  
+        
+        
+
 
 #intersection over union
 def compute_iou(old_cone_coordinates, old_width_height, cone_coordinates, width_height):
@@ -275,7 +325,7 @@ def check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_wi
                 
     return old_cone_coordinates, old_width_height
 
-def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std):
+def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std, templates):
     t1 = time.time()
     frame = color_transfer(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
     frame_yellow = color_enhancement(frame)
@@ -283,7 +333,7 @@ def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_
     frame_yellow = find_yellow(frame_yellow)
     frame_blue = find_blue(frame_blue)
     frame = cv2.add(frame_yellow, frame_blue)            
-    frame, cone_coordinates, width_height = template_matching(frame)
+    frame, cone_coordinates, width_height = template_matching(frame,templates)
     t2 = time.time()
     print(f"FPS = {1/(t2-t1)}")
     return frame, cone_coordinates, width_height
@@ -384,20 +434,19 @@ def IOU(boxA, boxB):
 # Test Logic
 def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test/label/"): #Hog\Test\images\amz_01361.png #
     L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("processing_ZED//vores")
+    templates = create_templates2()
 
     # the first image in the test folder
     for images in os.listdir(Testpath_images):
-        print("new image")
         # Read the image
         
         img = cv2.imread(Testpath_images + images)
         # Read the Annotation file one line at a time
         
         Cones_from_ann = ReadAnnotationFile(img, images, Testpath_labels)
-        print(f"Cones_from_ann: {Cones_from_ann}")
 
-        _, cone_coordinates, width_height = preprocess_image(img, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
-
+        _, cone_coordinates, width_height = preprocess_image(img, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std, templates)
+        
         # Detect cones in the frame
         cone_locations_pre = convert_array(cone_coordinates, width_height)
 
@@ -411,7 +460,6 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
             for i, cone_from_ann in enumerate(Cones_from_ann):
                 # Extract the coordinates of the boxes
                               
-                
                 # Extracting coordinates for cone A
                 x0A = max(cone[0][0],0)
                 y0A = max(cone[0][1], 0)
@@ -426,7 +474,7 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
 
                 # Calculate the intersection over union
                 Iou = IOU((x0A, y0A, x1A, y1A), (x0B, y0B, x1B, y1B))
-                print("Iou: " + str(Iou))
+                #print("Iou: " + str(Iou))
 
                 if Iou >= 0.5:
                     # If the cones are close to each other, save the index, and the IOU value. Only the closest cone will be saved
@@ -450,7 +498,10 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
         Precision=0
          
         # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
-        if true_positives + false_positives == 0:
+        if true_positives + false_positives + false_negatives == 0:
+            Precision = 1
+            Recall = 1
+        elif true_positives + false_positives == 0:
             Precision = 0
         elif (true_positives + false_negatives) == 0:
             Recall = 0
@@ -460,6 +511,7 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
 
         print("Recall: " + str(Recall))
         print("Precision: " + str(Precision))
+        print("-------------------------------------------------")
 
         # Draw the found cones with blue  
         for cone in Cones_from_ann:
@@ -473,12 +525,14 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
         for cone in cone_locations_pre:
             cv2.rectangle(img, (cone[0][0], cone[0][1]), (cone[0][0] + cone[1][0], cone[0][1] + cone[1][1]), (255, 0, 0), 2)
 
+        """
         # Display the frame - rezie the image to fit the screen
         img = cv2.resize(img, (1080, 720))
 
         cv2.imshow("Frame", img)
-        if cv2.waitKey(0) & 0xFF == ord('q'):
-            break     
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break   
+        """  
             
 Object_tracking = False
 
@@ -498,7 +552,7 @@ def load(Object_tracking):
         if ret == False:
             break
         
-        frame, cone_coordinates, width_height, y = preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
+        frame, cone_coordinates, width_height = preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
         if Object_tracking == True:
             #makes sure that there are a counting entry for each cone
             for i in range(0, 2):
