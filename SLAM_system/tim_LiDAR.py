@@ -14,6 +14,7 @@ class Lidar:
         self.sensorAddr = address
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect(self.sensorAddr)
+        self.point_coordinate = 0
         
     def query(self, queryText):
         self.sock.sendall((chr(2) + queryText + chr(3)).encode('ascii'))
@@ -126,6 +127,12 @@ class Lidar:
             # Print the distance to the closest point from the mouse
             print('Distance to closest point: ', distance_of_interest)
 
+            point_coordinate = [x_array[min_distance_index], y_array[min_distance_index]]
+            print(point_coordinate)
+            self.point_coordinate = point_coordinate
+    
+    def get_point_coordinate(self):
+        return self.point_coordinate
 
     # Plot the 2D point cloud using the distance values and the angles
     def plot_point_cloud(self, distance_array, angle_array):
@@ -156,37 +163,30 @@ ax.set_aspect('equal') # Set the aspect ratio to 1
 
 Run_number=1
 frame_counter=1
-# Create the "DepthData" directory if it doesn't exist
+
+# Create the "LIDAR_data" directory if it doesn't exist
 if not os.path.exists("SLAM_system/LiDAR_data/Run{}".format(Run_number)):
     os.makedirs("SLAM_system/LiDAR_data/Run{}".format(Run_number))
 
 scan = True
-pause = True
+pause = False
+
+point_list = []
 
 try:
     while scan:
-        if keyboard.is_pressed('q'):
-            plt.close('all')
-            break
-        if keyboard.is_pressed('s'):
-            np.save("SLAM_system/LiDAR_data/Run{}/SICK_{}.npy".format(Run_number,frame_counter), distance_array)
-            frame_counter+=1
-
         single_scan_data = lidar.singleScan()
 
         distance_array, angle_array = lidar.parse_data(single_scan_data)                
         
-        fig.canvas.mpl_connect('button_press_event', lambda event: lidar.get_length_to_point(event, distance_array, angle_array))
-
+        fig.canvas.mpl_connect('button_release_event', lambda event: lidar.get_length_to_point(event, distance_array, angle_array))
+    
         x_array = np.array(distance_array) * np.cos(np.array(np.radians(angle_array)))
         y_array = np.array(distance_array) * np.sin(np.array(np.radians(angle_array)))
 
-        plt.xlim([-5000, 5000]) # Set the x axis limits
-        plt.ylim([-5000, 5000]) # Set the y axis limits
-
-        #plt.axline((0, 0), (0, 1), linewidth=1, color='green')
-        #plt.axline((0, 0), (1, 0), linewidth=1, color='purple')
-
+        plt.xlim([-10000, 10000]) # Set the x axis limits
+        plt.ylim([-2000, 15000]) # Set the y axis limits
+    
         ax.plot(0, 0, marker="o", markersize=2, markeredgecolor="red", markerfacecolor="red")
 
         # Plot the x and y values as a scatter plot
@@ -195,23 +195,61 @@ try:
         plt.ylabel('y (mm)')
         plt.title('2D Point Cloud from LIDAR Data')
         
-        if keyboard.is_pressed('p'):
-            pause=True
-            plt.pause(0.1)
-
+        if keyboard.is_pressed('q'):
+            while True:
+                if not keyboard.is_pressed('q'):
+                    plt.close('all')
+                    break
+            break
+        if keyboard.is_pressed('o'):
+            while True:
+                if not keyboard.is_pressed('o'):
+                    pause=True
+                    plt.pause(0.1)
+                    break
+                
         #pause the program if key 'p' is pressed
         if pause==True:
             print("The program is now paused until the key 'p' is pressed!")
             while True:
-                if keyboard.is_pressed('p'):
-                    print("The key 'p' was pressed and the program is now continuing!")
+                if keyboard.is_pressed('q'):
+                    while True:
+                        if not keyboard.is_pressed('q'):
+                            plt.close('all')
+                            break
                     break
-                else:
-                    plt.pause(0.1)
-            pause=False
+                plt.pause(0.1)
+                if keyboard.is_pressed('p'):
+                    print("The program is now paused until the key 'p' is pressed!")
+                    while True:
+                        plt.pause(0.1)
+                        if keyboard.is_pressed('p'):
+                            print("The key 'p' was pressed and the program is now continuing!")
+                            break
+                    break
+                if keyboard.is_pressed('z'):
+                    while True:
+                        plt.pause(0.1)
+                        if keyboard.is_pressed('z'):
+                            Hej = lidar.get_point_coordinate()
+                            if point_list == [] or point_list[-1] != Hej:
+                                point_list.append(Hej)
+                            print(point_list)
+                        break
+                if keyboard.is_pressed('x'):
+                    while True:
+                        if not keyboard.is_pressed('x'):
+                            point_list_np = np.array(point_list)
+                            np.save("SLAM_system/LiDAR_data/Run{}/SICK_{}.npy".format(Run_number, frame_counter), point_list_np)
+                            frame_counter+=1
+                            break
+                    
+            pause = False
 
         plt.pause(0.03)
         ax.clear()
 
 finally:
     lidar.close()
+
+print('List of point coordinates:', point_list)
