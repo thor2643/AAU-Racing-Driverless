@@ -62,7 +62,8 @@ def calculate_HOG_features_custom(img, width = 64, height = 128):
         img = resize(img, width, height)
 
         img = np.float32(img) / 255.0
-        
+
+
         # Calculate gradient
         gx = cv2.Sobel(img, cv2.CV_32F, 1, 0, ksize=1)
         gy = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=1)
@@ -222,11 +223,20 @@ def train_SVM_model(PositiveSamplesFolder, NegativeSamplesFolder, kernel='linear
 
     return clf
 
+def calculate_progress(m, n, a, b, processed_windows):
+    total_windows = (m - a + 1) * (n - b + 1)
+    progress = (processed_windows / total_windows) * 100
+    print(progress)
+
 def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128), step_size = 2):
     # Iterate through the image using a sliding window
     cone_locations = []
-    for y in range(0, query_image.shape[0] - window_size[1], step_size):
-        for x in range(0, query_image.shape[1] - window_size[0], step_size):
+    print(query_image.shape[0])
+    Stop1 = query_image.shape[0] - window_size[1]
+    Stop2 = query_image.shape[1] - window_size[0]
+
+    for y in range(0, Stop1, step_size):
+        for x in range(0, Stop2, step_size):
             # Extract the current window
             window = query_image[y:y+window_size[1], x:x+window_size[0]]
 
@@ -240,6 +250,10 @@ def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128)
 
             if c:
                 cone_locations.extend(c)
+            
+        calculate_progress(Stop1, Stop2, window_size[1], window_size[0], y * Stop2 + x)
+
+
 
 
     return cone_locations
@@ -318,37 +332,54 @@ def spot_check(whole_image, clf, location, custom_Hog=False, window_size=(64, 12
 
     return cone_locations, HighestID
  
-def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=1, ):
+def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=1, Simple_Slide = True):
     cone_locations = []
 
     Bias = 32
-
-    # Split the image into three new images.
-    top_middle = query_image[query_image.shape[0] // 2:query_image.shape[0] // 2 + Bias, 0:query_image.shape[1]]  # 32 x 16
-    middle = query_image[query_image.shape[0] // 2:query_image.shape[0] // 2 + Bias * 3, 0:query_image.shape[1]]  # 64 x 32
-    bottom = query_image[query_image.shape[0] // 2:query_image.shape[0], 0:query_image.shape[1]]  # 128 x 64
-
     # Define window sizes for each iteration
     window_sizes = [(16, 32), (32, 64), (64, 128)]
 
-    # Iterate through the images and window sizes
-    for s, sub_image in enumerate([top_middle, middle, bottom]):
-        window_size = window_sizes[s]
+    if Simple_Slide:
+         # Iterate through the images and window sizes
+        for s, _ in enumerate(window_sizes):
+            print(s)
+            window_size = window_sizes[s]
+            print(window_size)
 
-        step_size = window_size[0] // 2// step_factor
+            step_size = window_size[0] // 2// step_factor
 
-        # Detect cones in the images
-        locations = sliding_window(sub_image, clf, custom_Hog, window_size, step_size)
-      
-        # Transform the locations back to the original image
-        for location in locations:
-            (x, y), color = location
+            # Detect cones in the images
+            locations = sliding_window(query_image, clf, custom_Hog, window_size, step_size)
+        
+            for location in locations:
+                (x, y), color = location
 
-            # Append to the list with cones, while transforming the coordinates back to the original image
-            cone_locations.append((HighestID, 0, (x, y + query_image.shape[0] // 2), color, window_size))
+                # Append to the list with cones, while transforming the coordinates back to the original image
+                cone_locations.append((HighestID, 0, (x, y), color, window_size))
+    else:
+        # Split the image into three new images.
+        top_middle = query_image[query_image.shape[0] // 2:query_image.shape[0] // 2 + Bias, 0:query_image.shape[1]]  # 32 x 16
+        middle = query_image[query_image.shape[0] // 2:query_image.shape[0] // 2 + Bias * 3, 0:query_image.shape[1]]  # 64 x 32
+        bottom = query_image[query_image.shape[0] // 2:query_image.shape[0], 0:query_image.shape[1]]  # 128 x 64
+
+        # Iterate through the images and window sizes
+        for s, sub_image in enumerate([top_middle, middle, bottom]):
+            window_size = window_sizes[s]
+
+            step_size = window_size[0] // 2// step_factor
+
+            # Detect cones in the images
+            locations = sliding_window(sub_image, clf, custom_Hog, window_size, step_size)
+        
+            # Transform the locations back to the original image
+            for location in locations:
+                (x, y), color = location
+
+                # Append to the list with cones, while transforming the coordinates back to the original image
+                cone_locations.append((HighestID, 0, (x, y + query_image.shape[0] // 2), color, window_size))
 
     # Filter out close points
-    cone_locations = filter_close_points(cone_locations, 32)
+    cone_locations = filter_close_points(cone_locations, 6)
 
     
     return cone_locations
@@ -478,7 +509,7 @@ def simulate_racecar_driving(target_frame_rate=30):
         ret, frame = cap.read()
         if ret:
             # Detect cones in the frame
-            cone_locations = HOG_predict(frame, clf, False, HighestID=HighestID)
+            cone_locations = HOG_predict(frame, clf, False, HighestID=HighestID, Simple_Slide = True)
 
             # If KnownCones is empty or not initialized correctly, initialize it as an empty list
             if not KnownCones or not isinstance(KnownCones, list):
@@ -606,10 +637,11 @@ def IOU(boxA, boxB):
 def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test/label/"):
     # Load the SVM model
     clf = initialize_SVM_model(modelpath="Hog/SVM_HOG_Model.pkl")
+    metrics = []
 
     # the first image in the test folder
     for images in os.listdir(Testpath_images):
-
+        start_time = time.time()
         # Read the image
         img = cv2.imread(Testpath_images + images)
         # Read the Annotation file one line at a time
@@ -617,7 +649,7 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
         Cones_from_ann = ReadAnnotationFile(img, images, Testpath_labels)
 
         # Detect cones in the frame
-        cone_locations_HOG = HOG_predict(img, clf, False)
+        cone_locations_HOG = HOG_predict(img, clf, False, step_factor= 6, Simple_Slide = False)
 
         # Initiate the state of the cones as the lenght of the cones from the annotation file
         Close_state_ann = len(Cones_from_ann) * [False]
@@ -660,6 +692,10 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
                 # Save the index of the closest cone
                 Close_state_ann[close_cones[0][0]] = True        
 
+        # Calculate the time it took to run the code
+        elapsed_time = time.time() - start_time
+        fps = 1/elapsed_time
+
         true_positives = close_state_hog.count(True)
         false_positives = close_state_hog.count(False)
         false_negatives = Close_state_ann.count(False)
@@ -673,32 +709,16 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
             Recall = true_positives/ (true_positives + false_negatives)
             Precision = true_positives / (true_positives + false_positives)   
 
-        print(Recall)
-
-        print("Recall: " + str(Recall))
-        print("Precision: " + str(Precision))
-
-        # Draw the found cones with blue  
-        for cone in Cones_from_ann:
-            if Close_state_ann[Cones_from_ann.index(cone)]:
-                color = (0, 255, 0)
-            else:
-                color = (0, 0, 255)
-            cv2.rectangle(img, (cone[0][0] - cone[1][0]//2 , cone[0][1] - cone[1][1]//2), (cone[0][0] + cone[1][0]//2, cone[0][1] + cone[1][1]//2), color, 2)         
-
-        # Draw all the cones found 
-        for cone in cone_locations_HOG:
-            cv2.rectangle(img, (cone[2][0] - cone[4][0]//2, cone[2][1] - cone[4][1]//2), (cone[2][0] + cone[4][0]//2, cone[2][1] + cone[4][1]//2), (255, 0, 0), 2)
-
-        # Display the frame - rezie the image to fit the screen
-        img = cv2.resize(img, (1080, 720))
-
-        cv2.imshow("Frame", img)
-        if cv2.waitKey(0) & 0xFF == ord('q'):
-            break
+        # add missing code 
+        metrics.append([Precision, Recall, fps])
+        print(metrics)
         
-
-    print("Testing logic...")
+    # Calculate the average metrics
+    metrics = np.array(metrics)
+    metrics_mean = np.mean(metrics, axis=0)
+    print("Metrics:")
+    print(metrics)
+    print(metrics_mean)
 
 # Main logic
 def main():
@@ -718,7 +738,7 @@ def main():
         ret, frame = cap.read()
         if ret:
             # Detect cones in the frame
-            cone_locations = HOG_predict(frame, clf, False, HighestID=HighestID)
+            cone_locations = HOG_predict(frame, clf, False, HighestID=HighestID, Simple_Slide = True)
 
             # If KnownCones is empty or not initialized correctly, initialize it as an empty list
             if not KnownCones or not isinstance(KnownCones, list):
