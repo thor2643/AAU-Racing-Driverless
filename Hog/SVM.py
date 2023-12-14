@@ -638,6 +638,9 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
     # Load the SVM model
     clf = initialize_SVM_model(modelpath="Hog/SVM_HOG_Model.pkl")
     metrics = []
+    true_positives = 0
+    false_positives = 0 
+    false_negatives = 0 
 
     # the first image in the test folder
     for images in os.listdir(Testpath_images):
@@ -696,28 +699,31 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
         elapsed_time = time.time() - start_time
         fps = 1/elapsed_time
 
-        true_positives = close_state_hog.count(True)
-        false_positives = close_state_hog.count(False)
-        false_negatives = Close_state_ann.count(False)
+        true_positives += close_state_hog.count(True)
+        false_positives += close_state_hog.count(False)
+        false_negatives += Close_state_ann.count(False)
+        print(true_positives, false_positives, false_negatives )
+            # add missing code 
+        metrics.append(fps)
+        print(metrics)  
+    
 
-        # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
-        if true_positives + false_positives == 0:
-            Precision = 0
-        elif (true_positives + false_negatives) == 0:
-            Recall = 0
-        else:
-            Recall = true_positives/ (true_positives + false_negatives)
-            Precision = true_positives / (true_positives + false_positives)   
+    # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
+    if true_positives + false_positives == 0:
+        Precision = 0
+    elif (true_positives + false_negatives) == 0:
+        Recall = 0
+    else:
+        Recall = true_positives/ (true_positives + false_negatives)
+        Precision = true_positives / (true_positives + false_positives)   
 
-        # add missing code 
-        metrics.append([Precision, Recall, fps])
-        print(metrics)
-        
     # Calculate the average metrics
     metrics = np.array(metrics)
     metrics_mean = np.mean(metrics, axis=0)
     print("Metrics:")
     print(metrics)
+    print("Precision " + str(Precision))
+    print("Recall" + str(Recall))
     print(metrics_mean)
 
 # Main logic
