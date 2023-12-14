@@ -200,9 +200,9 @@ def template_matching(frame, templates):
    
     for i, template in enumerate(templates):
         if i >= 10:
-            threshold = 0.65
+            threshold = 0.75 
         else:
-            threshold = 0.5
+            threshold = 0.7
         if i == len(templates)/2:
             c = 1
             new_cone = True
@@ -335,8 +335,9 @@ def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_
     frame = cv2.add(frame_yellow, frame_blue)            
     frame, cone_coordinates, width_height = template_matching(frame,templates)
     t2 = time.time()
-    print(f"FPS = {1/(t2-t1)}")
-    return frame, cone_coordinates, width_height
+    fps = 1/(t2-t1)
+    print(f"FPS = {fps}")
+    return frame, cone_coordinates, width_height, fps
 
 def draw_cones(frame, cone_coordinates, width_height, Object_tracking):
     #drawing the rectangles around the cones      
@@ -435,6 +436,10 @@ def IOU(boxA, boxB):
 def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test/label/"): #Hog\Test\images\amz_01361.png #
     L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("processing_ZED//vores")
     templates = create_templates2()
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+    fps_metric = []
 
     # the first image in the test folder
     for images in os.listdir(Testpath_images):
@@ -445,8 +450,10 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
         
         Cones_from_ann = ReadAnnotationFile(img, images, Testpath_labels)
 
-        _, cone_coordinates, width_height = preprocess_image(img, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std, templates)
+        _, cone_coordinates, width_height, fps = preprocess_image(img, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std, templates)
         
+        fps_metric.append(fps)
+
         # Detect cones in the frame
         cone_locations_pre = convert_array(cone_coordinates, width_height)
 
@@ -491,48 +498,49 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
                 # Save the index of the closest cone
                 Close_state_ann[close_cones[0][0]] = True        
 
-        true_positives = close_state_hog.count(True)
-        false_positives = close_state_hog.count(False)
-        false_negatives = Close_state_ann.count(False)
-        Recall=0
-        Precision=0
-         
-        # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
-        if true_positives + false_positives + false_negatives == 0:
-            Precision = 1
-            Recall = 1
-        elif true_positives + false_positives == 0:
-            Precision = 0
-        elif (true_positives + false_negatives) == 0:
-            Recall = 0
+        true_positives += close_state_hog.count(True)
+        false_positives += close_state_hog.count(False)
+        false_negatives += Close_state_ann.count(False)
+
+    # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
+    if true_positives + false_positives + false_negatives == 0:
+        Precision = 1
+        Recall = 1
+    elif true_positives + false_positives == 0:
+        Precision = 0
+    elif (true_positives + false_negatives) == 0:
+        Recall = 0
+    else:
+        Recall = true_positives/ (true_positives + false_negatives)
+        Precision = true_positives / (true_positives + false_positives)   
+
+    print("Recall: " + str(Recall))
+    print("Precision: " + str(Precision))
+    print(fps_metric)
+    print("Average FPS: " + str(sum(fps_metric)/len(fps_metric)))
+    print("-------------------------------------------------")
+
+    """
+    # Draw the found cones with blue  
+    for cone in Cones_from_ann:
+        if Close_state_ann[Cones_from_ann.index(cone)]:
+            color = (0, 255, 0)
         else:
-            Recall = true_positives/ (true_positives + false_negatives)
-            Precision = true_positives / (true_positives + false_positives)   
+            color = (0, 0, 255)
+        cv2.rectangle(img, (cone[0][0] - cone[1][0]//2 , cone[0][1] - cone[1][1]//2), (cone[0][0] + cone[1][0]//2, cone[0][1] + cone[1][1]//2), color, 2)         
 
-        print("Recall: " + str(Recall))
-        print("Precision: " + str(Precision))
-        print("-------------------------------------------------")
+    # Draw all the cones found 
+    for cone in cone_locations_pre:
+        cv2.rectangle(img, (cone[0][0], cone[0][1]), (cone[0][0] + cone[1][0], cone[0][1] + cone[1][1]), (255, 0, 0), 2)
 
-        # Draw the found cones with blue  
-        for cone in Cones_from_ann:
-            if Close_state_ann[Cones_from_ann.index(cone)]:
-                color = (0, 255, 0)
-            else:
-                color = (0, 0, 255)
-            cv2.rectangle(img, (cone[0][0] - cone[1][0]//2 , cone[0][1] - cone[1][1]//2), (cone[0][0] + cone[1][0]//2, cone[0][1] + cone[1][1]//2), color, 2)         
+    
+    # Display the frame - rezie the image to fit the screen
+    img = cv2.resize(img, (1080, 720))
 
-        # Draw all the cones found 
-        for cone in cone_locations_pre:
-            cv2.rectangle(img, (cone[0][0], cone[0][1]), (cone[0][0] + cone[1][0], cone[0][1] + cone[1][1]), (255, 0, 0), 2)
-
-        """
-        # Display the frame - rezie the image to fit the screen
-        img = cv2.resize(img, (1080, 720))
-
-        cv2.imshow("Frame", img)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break   
-        """  
+    cv2.imshow("Frame", img)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break   
+    """  
             
 Object_tracking = False
 
@@ -552,7 +560,7 @@ def load(Object_tracking):
         if ret == False:
             break
         
-        frame, cone_coordinates, width_height = preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
+        frame, cone_coordinates, width_height, _ = preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
         if Object_tracking == True:
             #makes sure that there are a counting entry for each cone
             for i in range(0, 2):
