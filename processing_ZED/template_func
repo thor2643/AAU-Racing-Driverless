@@ -1,0 +1,55 @@
+def template_matching(frame, templates):
+    #Variables
+    c = 0
+    cone_number = [(0),(0)]
+    allowed_distance=20   #pixels
+    new_cone = True
+    distance=0
+    filtered_cones= [[], []]
+    width_height = [[],[]]
+    i = 0  
+    thresholds_for_detections = []
+   
+    for i, template in enumerate(templates):
+        if i >= 9:
+            threshold = 0.65
+        else:
+            threshold = 0.6
+        if i == len(templates)/2:
+            c = 1
+            new_cone = True
+                
+        w, h = template.shape[1], template.shape[0]
+        res = cv2.matchTemplate(frame,template,cv2.TM_CCOEFF_NORMED)  
+        loc = np.where( res >= threshold)
+        # Iterate through the detections and store the threshold value for each
+        for pt in zip(*loc[::-1]):
+            threshold_value = res[pt[1], pt[0]]  # Get the threshold value at the detection point
+            thresholds_for_detections.append(threshold_value)
+        
+        #Sorting out the cones that are too close to each other based on the threshold value
+        for a, pt in enumerate(zip(*loc[::-1])):
+            if cone_number[c] != 0:
+                #the following part sorts the found cones out, so that only one cone is found in each location
+                for u in range(cone_number[c]):
+                    distance = np.sqrt((pt[0] - filtered_cones[c][u][0]) ** 2 + (pt[1] - filtered_cones[c][u][1]) ** 2)
+                    if distance > allowed_distance:
+                        new_cone = True
+                    elif distance < allowed_distance and thresholds_for_detections[a] < filtered_cones[c][u][2]:
+                        new_cone = False
+                        break #it stops looking
+                    elif distance < allowed_distance and thresholds_for_detections[a] >= filtered_cones[c][u][2]:
+                        #if the new cone has a better threshold than the old one, the old one is replaced
+                        del filtered_cones[c][u]
+                        del width_height[c][u]
+                        cone_number[c] -= 1
+                        new_cone = True
+                        break #it stops looking
+                        
+            if new_cone == True:
+                cone_number[c] += 1
+                ptk = [pt[0], pt[1], thresholds_for_detections[a]]
+                filtered_cones[c].append(ptk)
+                width_height[c].append([w, h])
+                    
+    return frame, filtered_cones, width_height 

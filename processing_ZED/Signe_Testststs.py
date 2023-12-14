@@ -127,7 +127,7 @@ def find_blue(processed_img):
     return temp_img
     
 def create_templates2():
-    #reading all the templates
+       #reading all the templates
     blue_template_start = cv2.imread("preproccesing//preprocesing_img//blue_template.jpg")
     yellow_template_start = cv2.imread("preproccesing//preprocesing_img//yellow_template1.jpg")
     #making the yellow template the same size as the blue template
@@ -175,35 +175,35 @@ def create_templates2():
     
     blue_template13 = cv2.resize(blue_template_start, (int(37* 0.75), int((55* 0.75)*2)))
     yellow_template13 = cv2.resize(yellow_template_start, (int(37*0.75), int((55*0.75)*2)))
+
     
     templates = [yellow_template, yellow_template1, yellow_template2, yellow_template3, yellow_template4, yellow_template5, yellow_template6, yellow_template7, yellow_template8, yellow_template9, yellow_template10, yellow_template11, yellow_template12, yellow_template13, blue_template, blue_template1, blue_template2, blue_template3, blue_template4, blue_template5, blue_template6, blue_template7, blue_template8, blue_template9, blue_template10, blue_template11, blue_template12, blue_template13]
+    
     return templates
 
 def template_matching(frame, templates):
     #Variables
     c = 0
     cone_number = [(0),(0)]
-    allowed_distance=50   #pixels
+    allowed_distance=20   #pixels
     new_cone = True
     distance=0
     filtered_cones= [[], []]
     width_height = [[],[]]
     i = 0  
     thresholds_for_detections = []
-    
-    frame_copy = frame.copy()
    
     for i, template in enumerate(templates):
         if i >= 9:
-            threshold = 0.75
+            threshold = 0.65
         else:
-            threshold = 0.7
+            threshold = 0.6
         if i == len(templates)/2:
             c = 1
             new_cone = True
                 
         w, h = template.shape[1], template.shape[0]
-        res = cv2.matchTemplate(frame_copy,template,cv2.TM_CCOEFF_NORMED)  
+        res = cv2.matchTemplate(frame,template,cv2.TM_CCOEFF_NORMED)  
         loc = np.where( res >= threshold)
         # Iterate through the detections and store the threshold value for each
         for pt in zip(*loc[::-1]):
@@ -533,10 +533,11 @@ Object_tracking = False
 
 def load(Object_tracking):
     #load video from folder:
-    video_folder = "processing_ZED//ZED_color_video_Run_1.avi"
+    video_folder = "Data_AccelerationTrack//1//Color.avi"            #"processing_ZED//ZED_color_video_Run_1.avi"
     cap = cv2.VideoCapture(video_folder)
     L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("processing_ZED//vores")
     frame_number = 0
+    templates = create_templates2()
     
     while True:
         t1 = time.time()
@@ -547,7 +548,7 @@ def load(Object_tracking):
         if ret == False:
             break
         
-        frame, cone_coordinates, width_height = preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std)
+        frame, cone_coordinates, width_height = preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std, templates)
         if Object_tracking == True:
             #makes sure that there are a counting entry for each cone
             for i in range(0, 2):
@@ -560,22 +561,20 @@ def load(Object_tracking):
                 old_cone_coordinates, old_width_height = check_new_cones(cone_coordinates, width_height, old_cone_coordinates, old_width_height)        
             
             #draw_cones(frame, old_cone_coordinates, old_width_height, y, Object_tracking)
-        #else:
-            #draw_cones(frame, cone_coordinates, width_height, y, Object_tracking)
+        else:
+            frame_copy = frame.copy()
+            draw_cones(frame_copy, cone_coordinates, width_height, Object_tracking)
 
         #show the frames:
-        #cv2.imshow("Video", frame)
+        cv2.imshow("Video", frame)
+        cv2.imshow("Video_copy", frame_copy)
         t2 = time.time()
-        print(f" FPS ={1/(t2-t1)}")
-        print(cone_coordinates)
-        print(width_height)
 
         # Press 'q' to exit the loop
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(0) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
     
-#load(Object_tracking)
-test_logic()
+load(Object_tracking)
