@@ -1,20 +1,13 @@
 def template_matching(frame, templates):
-    #Variables
-    c = 0
-    cone_number = [(0),(0)]
-    allowed_distance=20   #pixels
-    new_cone = True
-    distance=0
-    filtered_cones= [[], []]
-    width_height = [[],[]]
-    i = 0  
-    thresholds_for_detections = []
-   
+    allowed_distance=20  #in pixels  
+    
+    # determening the confidence threshold
     for i, template in enumerate(templates):
         if i >= 9:
             threshold = 0.65
         else:
             threshold = 0.6
+        #Determening the colour of the cone c=0 is yellow, c=1 is blue
         if i == len(templates)/2:
             c = 1
             new_cone = True
@@ -22,14 +15,14 @@ def template_matching(frame, templates):
         w, h = template.shape[1], template.shape[0]
         res = cv2.matchTemplate(frame,template,cv2.TM_CCOEFF_NORMED)  
         loc = np.where( res >= threshold)
-        # Iterate through the detections and store the threshold value for each
+        # Iterate through the detections and store the threshold value for each match with confidence above threshold
         for pt in zip(*loc[::-1]):
-            threshold_value = res[pt[1], pt[0]]  # Get the threshold value at the detection point
-            thresholds_for_detections.append(threshold_value)
+            threshold_value = res[pt[1], pt[0]]  # Get the threshold value for the detection
+            thresholds_for_detections.append(threshold_value) # Store the threshold value for the detection
         
         #Sorting out the cones that are too close to each other based on the threshold value
         for a, pt in enumerate(zip(*loc[::-1])):
-            if cone_number[c] != 0:
+            if cone_number[c] != 0: 
                 #the following part sorts the found cones out, so that only one cone is found in each location
                 for u in range(cone_number[c]):
                     distance = np.sqrt((pt[0] - filtered_cones[c][u][0]) ** 2 + (pt[1] - filtered_cones[c][u][1]) ** 2)
