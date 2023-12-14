@@ -695,17 +695,28 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
                 # Save the index of the closest cone
                 Close_state_ann[close_cones[0][0]] = True        
 
-        # Calculate the time it took to run the code
-        elapsed_time = time.time() - start_time
-        fps = 1/elapsed_time
+                print("Recall: " + str(Recall))
+                print("Precision: " + str(Precision))
+                #print("FPS: " + str(fps))
 
-        true_positives += close_state_hog.count(True)
-        false_positives += close_state_hog.count(False)
-        false_negatives += Close_state_ann.count(False)
-        print(true_positives, false_positives, false_negatives )
-            # add missing code 
-        metrics.append(fps)
-        print(metrics)  
+        # Draw the found cones with blue  
+        for cone in Cones_from_ann:
+            if Close_state_ann[Cones_from_ann.index(cone)]:
+                color = (0, 255, 0)
+            else:
+                color = (0, 0, 255)
+            cv2.rectangle(img, (cone[0][0] - cone[1][0]//2 , cone[0][1] - cone[1][1]//2), (cone[0][0] + cone[1][0]//2, cone[0][1] + cone[1][1]//2), color, 2)         
+
+        # Draw all the cones found 
+        for cone in cone_locations_HOG:
+            cv2.rectangle(img, (cone[2][0] - cone[4][0]//2, cone[2][1] - cone[4][1]//2), (cone[2][0] + cone[4][0]//2, cone[2][1] + cone[4][1]//2), (255, 0, 0), 2)
+
+        # Display the frame - rezie the image to fit the screen
+        img = cv2.resize(img, (1080, 720))
+
+        cv2.imshow("Frame", img)
+        if cv2.waitKey(0) & 0xFF == ord('q'):
+            break 
     
 
     # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
