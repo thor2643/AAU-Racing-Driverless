@@ -3,7 +3,7 @@ def template_matching(frame, templates):
     
     # determening the confidence threshold
     for i, template in enumerate(templates):
-        if i >= 9:
+        if i >= 10:
             threshold = 0.65
         else:
             threshold = 0.6
