@@ -186,7 +186,7 @@ def template_matching(frame, templates):
     #Variables
     c = 0
     cone_number = [(0),(0)]
-    allowed_distance=50   #pixels
+    allowed_distance=30   #pixels
     new_cone = True
     distance=0
     filtered_cones= [[], []]
