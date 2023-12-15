@@ -125,7 +125,7 @@ def find_blue(processed_img):
     # Bitwise-AND mask and original image
     temp_img = cv2.bitwise_and(processed_img, processed_img, mask=mask) 
     return temp_img
-    
+
 def create_templates2():
     #reading all the templates
     blue_template_start = cv2.imread("preproccesing//preprocesing_img//blue_template.jpg")
@@ -139,51 +139,54 @@ def create_templates2():
     
     blue_template1 = cv2.resize(blue_template_start, (int(37* 2.75), int(55*2.75)))
     yellow_template1 = cv2.resize(yellow_template_start, (int(37* 2.75), int(55*2.75)))
+    
+    blue_template2 = cv2.resize(blue_template_start, (int(37* 1.75), int((55* 1.75)*2)))
+    yellow_template2 = cv2.resize(yellow_template_start, (int(37*1.75), int((55*1.75)*2)))
    
-    blue_template2 = cv2.resize(blue_template_start, (int(37* 2.25), int(55*2.25)))
-    yellow_template2 = cv2.resize(yellow_template_start, (int(37* 2.75), int(55*2.75)))
+    blue_template3 = cv2.resize(blue_template_start, (int(37* 2.25), int(55*2.25)))
+    yellow_template3 = cv2.resize(yellow_template_start, (int(37* 2.75), int(55*2.75)))
     
-    blue_template3 = cv2.resize(blue_template_start, (int(37* 1.75), int(55*1.75)))
-    yellow_template3 = cv2.resize(yellow_template_start, (int(37* 1.75), int(55*1.75)))
+    blue_template4 = cv2.resize(blue_template_start, (int(37* 1.3), int((55* 1.3)*2)))
+    yellow_template4 = cv2.resize(yellow_template_start, (int(37*1.3), int((55*1.3)*2))) 
     
-    blue_template4 = blue_template_start.copy()
-    yellow_template4 = yellow_template_start.copy()
+    blue_template5 = cv2.resize(blue_template_start, (int(37* 1.75), int(55*1.75)))
+    yellow_template5 = cv2.resize(yellow_template_start, (int(37* 1.75), int(55*1.75)))
     
-    blue_template5 = cv2.resize(blue_template_start, (int(37* 1.25), int(55*1.25)))
-    yellow_template5 = cv2.resize(yellow_template_start, (int(37* 1.25), int(55*1.25)))
+    blue_template6 = blue_template_start.copy()
+    yellow_template6 = yellow_template_start.copy()
     
-    blue_template6 = cv2.resize(blue_template_start, (int(37* 0.75), int(55*0.75)))
-    yellow_template6 = cv2.resize(yellow_template_start, (int(37* 0.75), int(55*0.75)))
+    blue_template7 = cv2.resize(blue_template_start, (int(37* 1), int((55* 1)*2)))
+    yellow_template7 = cv2.resize(yellow_template_start, (int(37*1), int((55*1)*2))) 
     
-    blue_template7 = cv2.imread("preproccesing//preprocesing_img//blue_template2.jpg")
-    yellow_template7 = cv2.imread("preproccesing//preprocesing_img//yellow_template2.jpg")
+    blue_template8 = cv2.imread("preproccesing//preprocesing_img//blue_template1.jpg")
+    yellow_template8 = cv2.imread("preproccesing//preprocesing_img//yellow_template.jpg")
     
-    blue_template8 = cv2.resize(blue_template_start, (int(37* 0.5), int(55*0.5)))
-    yellow_template8 = cv2.resize(yellow_template_start, (int(37* 0.5), int(55*0.5)))
+    blue_template9 = cv2.resize(blue_template_start, (int(37* 1.25), int(55*1.25)))
+    yellow_template9 = cv2.resize(yellow_template_start, (int(37* 1.25), int(55*1.25)))
     
-    blue_template9 = cv2.imread("preproccesing//preprocesing_img//blue_template3.jpg")
-    yellow_template9 = cv2.imread("preproccesing//preprocesing_img//yellow_template3.jpg")
+    blue_template10 = cv2.resize(blue_template_start, (int(37* 0.75), int((55* 0.75)*2)))
+    yellow_template10 = cv2.resize(yellow_template_start, (int(37*0.75), int((55*0.75)*2)))
     
-    blue_template10 = cv2.resize(blue_template_start, (int(37* 1.75), int((55* 1.75)*2)))
-    yellow_template10 = cv2.resize(yellow_template_start, (int(37*1.75), int((55*1.75)*2)))
+    blue_template11 = cv2.resize(blue_template_start, (int(37* 0.75), int(55*0.75)))
+    yellow_template11 = cv2.resize(yellow_template_start, (int(37* 0.75), int(55*0.75)))
+
+    blue_template12 = cv2.resize(blue_template_start, (int(37* 0.5), int(55*0.5)))
+    yellow_template12 = cv2.resize(yellow_template_start, (int(37* 0.5), int(55*0.5)))
     
-    blue_template11 = cv2.resize(blue_template_start, (int(37* 1.3), int((55* 1.3)*2)))
-    yellow_template11 = cv2.resize(yellow_template_start, (int(37*1.3), int((55*1.3)*2))) 
+    blue_template13 = cv2.imread("preproccesing//preprocesing_img//blue_template2.jpg")
+    yellow_template13 = cv2.imread("preproccesing//preprocesing_img//yellow_template2.jpg")
     
-    blue_template12 = cv2.resize(blue_template_start, (int(37* 1), int((55* 1)*2)))
-    yellow_template12 = cv2.resize(yellow_template_start, (int(37*1), int((55*1)*2))) 
-    
-    blue_template13 = cv2.resize(blue_template_start, (int(37* 0.75), int((55* 0.75)*2)))
-    yellow_template13 = cv2.resize(yellow_template_start, (int(37*0.75), int((55*0.75)*2)))
-    
-    templates = [yellow_template, yellow_template1, yellow_template2, yellow_template3, yellow_template4, yellow_template5, yellow_template6, yellow_template7, yellow_template8, yellow_template9, yellow_template10, yellow_template11, yellow_template12, yellow_template13, blue_template, blue_template1, blue_template2, blue_template3, blue_template4, blue_template5, blue_template6, blue_template7, blue_template8, blue_template9, blue_template10, blue_template11, blue_template12, blue_template13]
+    blue_template14 = cv2.imread("preproccesing//preprocesing_img//blue_template3.jpg")
+    yellow_template14 = cv2.imread("preproccesing//preprocesing_img//yellow_template3.jpg")
+
+    templates = [yellow_template, yellow_template1, yellow_template2, yellow_template3, yellow_template4, yellow_template5, yellow_template6, yellow_template7, yellow_template8, yellow_template9, yellow_template10, yellow_template11, yellow_template12, yellow_template13, yellow_template14, blue_template, blue_template1, blue_template2, blue_template3, blue_template4, blue_template5, blue_template6, blue_template7, blue_template8, blue_template9, blue_template10, blue_template11, blue_template12, blue_template13, blue_template14]
     return templates
 
 def template_matching(frame, templates):
     #Variables
     c = 0
     cone_number = [(0),(0)]
-    allowed_distance=50   #pixels
+    allowed_distance=30   #pixels
     new_cone = True
     distance=0
     filtered_cones= [[], []]
@@ -194,7 +197,7 @@ def template_matching(frame, templates):
     frame_copy = frame.copy()
    
     for i, template in enumerate(templates):
-        if i >= 9:
+        if i >= 10:
             threshold = 0.75
         else:
             threshold = 0.7
@@ -331,7 +334,7 @@ def preprocess_image(frame, L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_
     frame, cone_coordinates, width_height = template_matching(frame,templates)
     t2 = time.time()
     fps = 1/(t2-t1)
-    print(f"FPS = {fps}")
+    #print(f"FPS = {fps}")
     return frame, cone_coordinates, width_height, fps
 
 def draw_cones(frame, cone_coordinates, width_height, Object_tracking):
@@ -439,6 +442,7 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
     # the first image in the test folder
     for images in os.listdir(Testpath_images):
         # Read the image
+        
         
         img = cv2.imread(Testpath_images + images)
         # Read the Annotation file one line at a time
@@ -574,9 +578,7 @@ def load(Object_tracking):
         #show the frames:
         #cv2.imshow("Video", frame)
         t2 = time.time()
-        print(f" FPS ={1/(t2-t1)}")
-        print(cone_coordinates)
-        print(width_height)
+        #print(f" FPS ={1/(t2-t1)}")
 
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
