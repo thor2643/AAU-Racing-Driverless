@@ -4,7 +4,7 @@ import os
 
 #parameters:
 run_number = 1
-frame_number = 150
+frame_number = 1600
 
 #path to data files
 data_path="C:\\Users\\3103e\\Documents\\GitHub\\AAU-Racing-Driverless\\ZED_camera\\Recordings_folder"
@@ -73,6 +73,8 @@ def display_frame_from_point_cloud_with_boxes_and_return_cone_pos(depth_arr_from
     point_cloud_frame=cv2.cvtColor(img_point_cloud_BGRA, cv2.COLOR_BGRA2RGBA)
 
     cones_pos_type=[]
+    coords=[[[115, 426], [158, 483]], [[412, 403], [433, 431]], [[504, 393], [518, 415]], [[548, 392], [558, 408]], [[576, 389], [584, 401]], [[600, 387], [607, 397]], [[745, 392], [752, 403]], [[762, 393], [770, 407]], [[794, 396], [806, 413]], [[837, 400], [853, 422]], [[923, 410], [944, 442]], [[1179, 441], [1236, 508]]]
+    
     for i in range(len(coords)):
         font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -84,19 +86,27 @@ def display_frame_from_point_cloud_with_boxes_and_return_cone_pos(depth_arr_from
         new_x_pixel_min=int((x_pixel_max-x_pixel_min)*1/3+x_pixel_min)
         new_x_pixel_max=int(-1*(x_pixel_max-x_pixel_min)*1/3+x_pixel_max)
         if x_pixel_max<point_cloud_frame.shape[1]/2:
-            cv2.rectangle(point_cloud_frame, (x_pixel_min, y_pixel_max), (x_pixel_max, y_pixel_min), (255, 0, 0), 2)
+            #cv2.rectangle(point_cloud_frame, (x_pixel_min, y_pixel_max), (x_pixel_max, y_pixel_min), (255, 0, 0), 2)
+            #cv2.rectangle(point_cloud_frame, (new_x_pixel_min, y_pixel_max), (new_x_pixel_max, new_y_pixel_min), (0, 255, 0), 2)
+            img_shown
+            cv2.rectangle(img_shown, (x_pixel_min, y_pixel_max), (x_pixel_max, y_pixel_min), (255, 0, 0), 2)
+            #cv2.rectangle(img_shown, (new_x_pixel_min, y_pixel_max), (new_x_pixel_max, new_y_pixel_min), (0, 255, 0), 2)
         else:
-            cv2.rectangle(point_cloud_frame, (x_pixel_min, y_pixel_max), (x_pixel_max, y_pixel_min), (0, 255, 255), 2)
-            cv2.rectangle(point_cloud_frame, (new_x_pixel_min, y_pixel_max), (new_x_pixel_max, new_y_pixel_min), (0, 255, 0), 2)
+            #cv2.rectangle(point_cloud_frame, (x_pixel_min, y_pixel_max), (x_pixel_max, y_pixel_min), (0, 255, 255), 2)
+            #cv2.rectangle(point_cloud_frame, (new_x_pixel_min, y_pixel_max), (new_x_pixel_max, new_y_pixel_min), (0, 255, 0), 2)
+            cv2.rectangle(img_shown, (x_pixel_min, y_pixel_max), (x_pixel_max, y_pixel_min), (0, 255, 255), 2)
+            #cv2.rectangle(img_shown, (new_x_pixel_min, y_pixel_max), (new_x_pixel_max, new_y_pixel_min), (0, 255, 0), 2)
         x_cone_pos=np.median(depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,0])
         y_cone_pos=np.median(np.sqrt(depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,1]**2+depth_arr[new_y_pixel_min:y_pixel_max,new_x_pixel_min:new_x_pixel_max,2]**2))
         
         print(f"x_cone_pos={x_cone_pos}, y_cone_pos={y_cone_pos}")
-        cv2.putText(point_cloud_frame, f"{i}", (x_pixel_max, y_pixel_min), font, 0.5, (0, 255, 0), 2)
+        #cv2.putText(point_cloud_frame, f"{i}", (x_pixel_max, y_pixel_min), font, 0.5, (0, 255, 0), 2)
+        cv2.putText(img_shown, f"{i}", (x_pixel_max, y_pixel_min), font, 0.5, (0, 255, 0), 2)
     
 
     
-    cv2.imshow("Image_point_cloud", point_cloud_frame)
+    #cv2.imshow("Image_point_cloud", point_cloud_frame)
+    cv2.imshow("Image_point_cloud", img_shown)
     cv2.waitKey(0)
 
 coords=[]
@@ -104,7 +114,7 @@ coords=[]
 display_frame(video_path, frame_number)
 #coords=[[[109, 489], [172, 421]], [[1062, 491], [1019, 430]], [[850, 431], [830, 402]], [[426, 426], [403, 394]], [[469, 407], [483, 387]], [[751, 412], [763, 393]], [[734, 402], [724, 387]], [[520, 399], [507, 383]]]
 display_frame_from_point_cloud_with_boxes_and_return_cone_pos(depth_arr)
-
+print(f"shape of depth_arr={depth_arr.shape}")
 #Frame_150_some_cones=[[[109, 489], [172, 421]], [[1062, 491], [1019, 430]], [[850, 431], [830, 402]], [[426, 426], [403, 394]], [[469, 407], [483, 387]], [[751, 412], [763, 393]], [[734, 402], [724, 387]], [[520, 399], [507, 383]]]
 #Frame_200=[[[305, 403], [272, 449]], [[986, 459], [1017, 416]], [[827, 418], [840, 395]], [[446, 414], [464, 390]], [[514, 401], [526, 383]], [[784, 405], [794, 388]], [[767, 388], [760, 398]], [[557, 394], [568, 380]]]
 #Frame_250=[[[434, 439], [459, 401]], [[1066, 406], [1039, 444]], [[936, 391], [923, 416]], [[881, 390], [870, 402]], [[842, 383], [831, 396]], [[575, 390], [559, 411]], [[629, 383], [617, 399]], [[653, 381], [645, 394]]]
@@ -116,4 +126,4 @@ display_frame_from_point_cloud_with_boxes_and_return_cone_pos(depth_arr)
 #Frame_600=[[[382, 495], [340, 426]], [[531, 400], [554, 434]], [[602, 391], [617, 411]], [[644, 386], [656, 404]], [[1122, 403], [1145, 439]], [[977, 392], [992, 416]], [[910, 387], [921, 406]], [[875, 386], [883, 400]]]
 #Frame_700=[[[729, 468], [755, 421]], [[597, 402], [614, 431]], [[550, 397], [563, 417]], [[521, 396], [531, 410]], [[482, 392], [492, 407]], [[457, 391], [470, 407]], [[443, 392], [452, 408]], [[410, 390], [420, 406]], [[390, 389], [401, 407]], [[378, 390], [387, 407]], [[368, 391], [377, 408]], [[300, 387], [312, 407]], [[242, 387], [252, 406]], [[169, 391], [182, 416]], [[41, 398], [63, 433]]]
 #Frame_800=[[[729, 468], [755, 421]], [[597, 402], [614, 431]], [[550, 397], [563, 417]], [[521, 396], [531, 410]], [[482, 392], [492, 407]], [[457, 391], [470, 407]], [[443, 392], [452, 408]], [[410, 390], [420, 406]], [[390, 389], [401, 407]], [[378, 390], [387, 407]], [[368, 391], [377, 408]], [[300, 387], [312, 407]], [[242, 387], [252, 406]], [[169, 391], [182, 416]], [[41, 398], [63, 433]]]
-
+#Frame_1600=[[[115, 426], [158, 483]], [[412, 403], [433, 431]], [[504, 393], [518, 415]], [[548, 392], [558, 408]], [[576, 389], [584, 401]], [[600, 387], [607, 397]], [[745, 392], [752, 403]], [[762, 393], [770, 407]], [[794, 396], [806, 413]], [[837, 400], [853, 422]], [[923, 410], [944, 442]], [[1179, 441], [1236, 508]]]

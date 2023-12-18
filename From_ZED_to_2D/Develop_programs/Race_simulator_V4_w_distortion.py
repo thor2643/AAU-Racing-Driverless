@@ -7,6 +7,7 @@ import DelanayTriangles_copy_2 as DT
 import random
 import keyboard
 
+race_track_number=4
 
 def race_track(number):
     if number==1:
@@ -46,7 +47,7 @@ def race_track(number):
         print("The program will break now terminated!")
     return yellow_points, blue_points, lab_time
 
-yellow_points, blue_points, lab_time=race_track(6)
+yellow_points, blue_points, lab_time=race_track(race_track_number)
 
 yellow_points.append([0.0,0.0])
 blue_points.append([0.0,-3.0])
@@ -66,6 +67,12 @@ y_blue=blue_points_np[:,1]
 #plot
 fig_1, ax_1 = plt.subplots()
 ax_1.set_aspect('equal') # Set the aspect ratio to 1
+#x and y labels and title
+ax_1.set_xlabel('x [m]')
+ax_1.set_ylabel('y [m]')
+ax_1.set_title(f'Race track {race_track_number}')
+
+
 
 ax_1.scatter(x_yellow, y_yellow, c='gold', marker='o') # Create a scatter plot object
 ax_1.scatter(x_blue, y_blue, c='b', marker='o') # Create a scatter plot object
@@ -222,6 +229,10 @@ def update_pos_and_oriantation(pos, oriantation, stering_angle, speed, dt):
 #plot
 fig_2, ax_2 = plt.subplots()
 ax_2.set_aspect('equal') # Set the aspect ratio to 1
+#x and y labels and title
+ax_2.set_xlabel('x [m]')
+ax_2.set_ylabel('y [m]')
+ax_2.set_title('Car view')
 lim_x=plt.xlim([-view_width-1, view_width+1]) # Set the x axis limits
 lim_y=plt.ylim([-1, view_depth+1]) # Set the y axis limits
 
@@ -314,7 +325,7 @@ for i in range(lab_time): #run1 =920 run3=1155 #real life 280
     ax_2.scatter(yellow_points_tran[:,0], yellow_points_tran[:,1], c='gold', marker='o') # Create a scatter plot object
     ax_2.scatter(blue_points_tran[:,0], blue_points_tran[:,1], c='b', marker='o') # Create a scatter plot object
     ax_2.scatter(midpoints[:,0], midpoints[:,1], c='r', marker='o') # Create a scatter plot object
-    
+
     if keyboard.is_pressed('p'):
         pause=True
         plt.pause(0.1)

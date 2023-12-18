@@ -108,6 +108,14 @@ def plot_points(point_array, point_array_without_color, tri, midpoints):
         x2, y2, color2 = point_array[i + 1]
         plt.plot(x1, y1, 'o', color=color1)
         plt.plot(x2, y2, 'o', color=color2)  # Add a line in the opposite direction
+    #make axis equal
+    plt.axis('equal')
+    #add title
+    plt.title("Midpoints generated with Delaunay Triangulation")
+    #xlabel
+    plt.xlabel("X [mm]")
+    #ylabel
+    plt.ylabel("Y [mm]")
     plt.show()
 
 def main():

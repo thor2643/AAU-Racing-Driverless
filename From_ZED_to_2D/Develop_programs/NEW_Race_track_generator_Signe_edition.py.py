@@ -504,7 +504,7 @@ def race_track_6():
 
     return yellow_points,blue_points
 
-yellow_points,blue_points=race_track_4()
+yellow_points,blue_points=race_track_6()
 
 print(f"yellow_points=\n{yellow_points.tolist()}")
 print(f"blue_points=\n{blue_points.tolist()}")
