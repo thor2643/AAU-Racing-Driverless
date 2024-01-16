@@ -2,6 +2,17 @@ import os
 import yaml
 import cv2
 import numpy as np
+from tqdm import tqdm
+
+#Class id dictionary
+class_id_dict = {
+    0: "Yellow",
+    1: "Blue",
+    2: "Orange",
+    3: "LargeOrange",
+}
+
+min_area = 400
 
 def random_shift(image, x1, y1, x2, y2, max_shift=20):
     # Calculate random shifts in both x and y directions
@@ -33,33 +44,72 @@ def random_shift(image, x1, y1, x2, y2, max_shift=20):
 
     return cropped_image
 
+def get_coordinates_from_txt(filename, img_shape):
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+        coordinates = []
+        for line in lines:
+            class_id, x_center, y_center, width, height = map(float, line.split())
+            # Convert normalized coordinates to pixel coordinates
+            x_center *= img_shape[1]
+            y_center *= img_shape[0]
+            width *= img_shape[1]
+            height *= img_shape[0]
+            # Convert center coordinates to corner coordinates
+            x1 = int(x_center - width / 2)
+            y1 = int(y_center - height / 2)
+            x2 = int(x_center + width / 2)
+            y2 = int(y_center + height / 2)
+            # Append the coordinates to the list
+            coordinates.append((class_id, x1, y1, x2, y2))
+        return coordinates
+
 def save_slices_from_ann(supervisely_path, img_path, output_path):
+    total_images = len(os.listdir(img_path))
+    progress_bar = tqdm(total=total_images, ncols=70)
+
     for filename, image_filename in zip(os.listdir(supervisely_path), os.listdir(img_path)):
         img = cv2.imread(os.path.join(img_path, image_filename))
+        if img is None:
+            print(f"Image not loaded: {image_filename}")
+            continue
 
-        if filename.endswith(".json"):
-            with open(os.path.join(supervisely_path, filename), 'r') as f:
-                data = yaml.load(f, Loader=yaml.FullLoader)
 
-                for obj in data['objects']:
-                    x1, y1, x2, y2 = obj['points']['exterior'][0] + obj['points']['exterior'][1]
+        if filename.endswith(".txt"):
+            coordinates = get_coordinates_from_txt(os.path.join(supervisely_path, filename), img.shape)
+            for class_id, x1, y1, x2, y2 in coordinates:
+                
 
-                    class_title = obj['classTitle']
-                    output_dir = os.path.join(output_path, class_title)
+                # Check if the picture is larger than 200 pixels in area. If it is not, skip it
+                if (x2 - x1) * (y2 - y1) < min_area or class_id > 1:
+                    continue
 
-                    # Create the output directory if it doesn't exist
-                    os.makedirs(output_dir, exist_ok=True)
+                class_title = class_id_dict[int(class_id)]
+                output_dir = os.path.join(output_path, class_title)
 
-                    # Crop the rectangle from the image with a random offset such that the cones are not centered
-                    cropped_img = random_shift(img, x1, y1, x2, y2, 0)
+                # Create the output directory if it doesn't exist
+                os.makedirs(output_dir, exist_ok=True)
 
-                    # Check if the cropped image is not None and not empty before saving
-                    if cropped_img is not None and not cropped_img.size == 0:
-                        # Define the output file name (you can modify this as needed)
-                        output_filename = f"{class_title}_{image_filename}"
+                # Crop the rectangle from the image with a random offset such that the cones are not centered
+                cropped_img = random_shift(img, x1, y1, x2, y2, 0)
+                if cropped_img is None:
+                    print(f"Invalid crop for image: {image_filename}")
+                    continue
 
-                        # Save the cropped rectangle
-                        cv2.imwrite(os.path.join(output_dir, output_filename), cropped_img)
+
+                # Check if the cropped image is not None and not empty before saving
+                if cropped_img is not None and not cropped_img.size == 0:
+                    # Define the output file name (you can modify this as needed)
+                    output_filename = f"{class_title}_{image_filename}"
+
+                    # Save the cropped rectangle
+                    if not cv2.imwrite(os.path.join(output_dir, output_filename), cropped_img):
+                        print(f"Image not saved: {output_filename}")
+
+        progress_bar.update(1)
+
+    progress_bar.close()
+
 
 # Example usage:
-save_slices_from_ann("Hog/amz/ann", "Hog/amz/img", "Hog/Slice")
+save_slices_from_ann("Hog/YOLO_Dataset_All/labels/train", "Hog/YOLO_Dataset_All/images/train", "Hog/Slices")

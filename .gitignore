@@ -14,4 +14,5 @@ img/
 Hog/HOG.py
 Hog/SaveImgFromAnn.py
 Hog/SaveSlizeFromSlidingWindow.py
-Hog/SVM_HOG_Model.pkl
+Hog/YOLO_Dataset_All
+Hog/Slices
