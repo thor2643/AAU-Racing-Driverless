@@ -217,6 +217,7 @@ def train_SVM_model(PositiveSamplesFolder, NegativeSamplesFolder, kernel='linear
     clf = svm.SVC(kernel=kernel, C=C, probability=True)
     clf.fit(X_train, y_train)
 
+    print("SVM classifier trained with the following parameters: " + str(clf))
     # Calculate the accuracy of the classifier
     y_pred = clf.predict(X_test)
     print("Accuracy: " + str(accuracy_score(y_test, y_pred)))
@@ -251,10 +252,7 @@ def sliding_window(query_image, clf, custom_Hog = False, window_size = (64, 128)
             if c:
                 cone_locations.extend(c)
             
-        calculate_progress(Stop1, Stop2, window_size[1], window_size[0], y * Stop2 + x)
-
-
-
+        #calculate_progress(Stop1, Stop2, window_size[1], window_size[0], y * Stop2 + x)
 
     return cone_locations
 
@@ -384,7 +382,7 @@ def HOG_predict(query_image, clf, custom_Hog=False, HighestID=0, step_factor=1, 
     
     return cone_locations
 
-def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFolder_y = "Hog/Cones_Positive/Centered/Yellow", PositiveSamplesFolder_b = "Hog/Cones_Positive/Centered/Blue", NegativeSamplesFolder = "Hog/Cones_Negative", kernel='rbf', C=1):
+def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFolder_y = "Hog/Slices_2/Yellow", PositiveSamplesFolder_b = "Hog/Slices_2/Blue", NegativeSamplesFolder = "Hog/Slices_2/Negative_samples", kernel='rbf', C=1):
     # First we check if we have a model trained already, if not we should train one
     print("Checking if a model is already trained...")
     if os.path.isfile(modelpath):
@@ -396,7 +394,10 @@ def initialize_SVM_model(modelpath = "Hog/SVM_HOG_Model.pkl", PositiveSamplesFol
         print("No model was found. Training a new model...")
         # Train the model
         print("Training the model for the blue cones...")
+        
+
         clf_b = train_SVM_model(PositiveSamplesFolder_b, NegativeSamplesFolder, kernel=kernel, C = C)
+
         print("Training the model for the yellow cones...")
         clf_y = train_SVM_model(PositiveSamplesFolder_y, NegativeSamplesFolder, kernel=kernel, C = C)
         clf = [clf_b, clf_y]
@@ -644,7 +645,6 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
 
     # the first image in the test folder
     for images in os.listdir(Testpath_images):
-        start_time = time.time()
         # Read the image
         img = cv2.imread(Testpath_images + images)
         # Read the Annotation file one line at a time
@@ -698,26 +698,6 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
                 print("Recall: " + str(Recall))
                 print("Precision: " + str(Precision))
                 #print("FPS: " + str(fps))
-
-        # Draw the found cones with blue  
-        for cone in Cones_from_ann:
-            if Close_state_ann[Cones_from_ann.index(cone)]:
-                color = (0, 255, 0)
-            else:
-                color = (0, 0, 255)
-            cv2.rectangle(img, (cone[0][0] - cone[1][0]//2 , cone[0][1] - cone[1][1]//2), (cone[0][0] + cone[1][0]//2, cone[0][1] + cone[1][1]//2), color, 2)         
-
-        # Draw all the cones found 
-        for cone in cone_locations_HOG:
-            cv2.rectangle(img, (cone[2][0] - cone[4][0]//2, cone[2][1] - cone[4][1]//2), (cone[2][0] + cone[4][0]//2, cone[2][1] + cone[4][1]//2), (255, 0, 0), 2)
-
-        # Display the frame - rezie the image to fit the screen
-        img = cv2.resize(img, (1080, 720))
-
-        cv2.imshow("Frame", img)
-        if cv2.waitKey(0) & 0xFF == ord('q'):
-            break 
-    
 
     # We have chosen to set the precision to 0 if there are no true positives and no false positives as this is an undefinable case 
     if true_positives + false_positives == 0:
