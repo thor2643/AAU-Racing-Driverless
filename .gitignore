@@ -17,6 +17,7 @@ Hog/SaveSlizeFromSlidingWindow.py
 Hog/YOLO_Dataset_All
 Hog/Slices
 Hog/Slices_2
+Hog/Slices_2 - Kopi
 Hog/Slices_3
 Hog/Slices_test
 Hog/Test
@@ -24,3 +25,5 @@ Hog/SaveImgFromAnn.py
 Hog/SaveSlizeFromSlidingWindow.py
 Hog/HOG.py
 Hog/SaveImgFromAnn_Negative.py
+Hog/SVM_HOG_Model.pkl
+Hog/SVM_HOG_Model_10k.pkl

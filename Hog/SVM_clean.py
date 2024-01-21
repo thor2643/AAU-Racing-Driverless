@@ -522,6 +522,20 @@ def test_logic(Testpath_images = "Hog/Test/images/", Testpath_labels = "Hog/Test
                 # Save the index of the closest cone
                 Close_state_ann[close_cones[0][0]] = True    
 
+        # Draw the cones from the annotation file
+        for cone in Cones_from_ann:
+            cv2.rectangle(img, (cone[0][0] - cone[1][0] // 2, cone[0][1] - cone[1][1] // 2), (cone[0][0] + cone[1][0] // 2, cone[0][1] + cone[1][1] // 2), (255, 0, 0), 2)
+
+        # Draw the cones from the HOG detector, make them green if they are flagged as close to a cone from the annotation file
+        for i, cone in enumerate(cone_locations_HOG):
+            if close_state_hog[i]:
+                cv2.rectangle(img, (cone[2][0] - cone[4][0] // 2, cone[2][1] - cone[4][1] // 2), (cone[2][0] + cone[4][0] // 2, cone[2][1] + cone[4][1] // 2), (0, 255, 0), 2)
+            else:
+                cv2.rectangle(img, (cone[2][0] - cone[4][0] // 2, cone[2][1] - cone[4][1] // 2), (cone[2][0] + cone[4][0] // 2, cone[2][1] + cone[4][1] // 2), (0, 0, 255), 2)
+        
+        # Save the image in a folder
+        cv2.imwrite("Hog/TestImagesDrawn" + images, img)
+
         # Calculate the true positives, false positives and false negatives - using the count function
         true_positives += Close_state_ann.count(True)
         false_negatives += Close_state_ann.count(False)

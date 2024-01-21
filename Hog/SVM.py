@@ -190,11 +190,24 @@ def HogFeatureFolderExtractor(PositiveSamplesFolder, NegativeSamplesFolder, useC
    
     # Process the positive and negative samples folders
     positive_features = CalculateFeatureFromFolder(PositiveSamplesFolder, useCustomHOG, width, height)
+    
+    if PositiveSamplesFolder == "Hog/Slices_2/Yellow":
+        Negative_features_1 = CalculateFeatureFromFolder("Hog/Slices_2/Blue", useCustomHOG, width, height)
+    else:
+        Negative_features_1 = CalculateFeatureFromFolder("Hog/Slices_2/Yellow", useCustomHOG, width, height)
+    
     negative_features = CalculateFeatureFromFolder(NegativeSamplesFolder, useCustomHOG, width, height)
+    
+    
 
     # Transpose the feature vectors
     positive_features = positive_features.T
     negative_features = negative_features.T
+    Negative_features_1 = Negative_features_1.T
+    negative_features = np.concatenate((negative_features, Negative_features_1), axis=0)
+
+    print("Negative shape" + str(negative_features.shape))
+
 
     # Combine features and create labels for positive and negative samples
     positive_labels = np.ones(len(positive_features))
@@ -209,9 +222,12 @@ def train_SVM_model(PositiveSamplesFolder, NegativeSamplesFolder, kernel='linear
     # Combine all features and labels
     x = np.vstack((positive_features, negative_features))
     y = np.concatenate((positive_labels, negative_labels))
+    print(x.shape)
+
+    trainsize = 15000
 
     # Split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(x, y, train_size = trainsize, test_size=0.2, random_state=42)
 
     # Train an SVM classifier - Kernel is the kernel type, C is the penalty parameter of the error term
     clf = svm.SVC(kernel=kernel, C=C, probability=True)
