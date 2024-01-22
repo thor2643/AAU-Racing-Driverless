@@ -10,7 +10,13 @@ class_id_dict = {
     1: "Blue",
     2: "Orange",
     3: "LargeOrange",
-}
+}           
+
+count = 0
+
+Extra = False
+
+ResizeToClosestWindow = False
 
 window_sizes = [(32,16), (64,32), (128,64)]
 
@@ -71,30 +77,32 @@ def get_coordinates_from_txt(filename, img_shape):
             #Calculate the hight and width
             h_w = (y2 - y1,x2 - x1) 
 
-            # Check which window size it is closest too in the window_sizes list, in regards to distance
-            closest_window_size = min(window_sizes, key=lambda x: abs(x[0] - h_w[0]) + abs(x[1] - h_w[1]))
-            difference = (closest_window_size[0] - h_w[0], closest_window_size[1] - h_w[1])
+            if ResizeToClosestWindow:
+                # Check which window size it is closest too in the window_sizes list, in regards to distance
+                closest_window_size = min(window_sizes, key=lambda x: abs(x[0] - h_w[0]) + abs(x[1] - h_w[1]))
+                difference = (closest_window_size[0] - h_w[0], closest_window_size[1] - h_w[1])
 
-            # Calculate the new coordinates. Add half the difference to both x and y coordinates. 
-            # This will center the window around the cone if x1 is smaller than x2 and y1 is smaller than y2¨
-            if x1 < x2:
-                x1 -= difference[1]//2
-                x2 += difference[1]//2
-            else:
-                x1 += difference[1]//2
-                x2 -= difference[1]//2
-            if y1 < y2:
-                y1 -= difference[0]//2
-                y2 += difference[0]//2
-            else:
-                y1 += difference[0]//2
-                y2 -= difference[0]//2
+                # Calculate the new coordinates. Add half the difference to both x and y coordinates. 
+                # This will center the window around the cone if x1 is smaller than x2 and y1 is smaller than y2¨
+                if x1 < x2:
+                    x1 -= difference[1]//2
+                    x2 += difference[1]//2
+                else:
+                    x1 += difference[1]//2
+                    x2 -= difference[1]//2
+                if y1 < y2:
+                    y1 -= difference[0]//2
+                    y2 += difference[0]//2
+                else:
+                    y1 += difference[0]//2
+                    y2 -= difference[0]//2
 
             # Append the coordinates to the list
             coordinates.append((class_id, x1, y1, x2, y2))
         return coordinates
 
 def save_slices_from_ann(supervisely_path, img_path, output_path):
+    global count
     total_images = len(os.listdir(img_path))
     progress_bar = tqdm(total=total_images, ncols=70)
 
@@ -115,6 +123,7 @@ def save_slices_from_ann(supervisely_path, img_path, output_path):
 
         if ann_filename.endswith(".txt"):
             coordinates = get_coordinates_from_txt(os.path.join(supervisely_path, ann_filename), img.shape)
+            i = 0
             for class_id, x1, y1, x2, y2 in coordinates:
                 
                 # Check if the picture is larger than min_area pixels in area. If it is not, skip it
@@ -132,24 +141,32 @@ def save_slices_from_ann(supervisely_path, img_path, output_path):
                 # Crop the rectangle from the image with a random offset such that the cones are not centered
                 cropped_img = []
                 cropped_img.append(random_shift(img, x1, y1, x2, y2, shift = False))
-                for _ in range(3):
-                    cropped_img.append(random_shift(img, x1, y1, x2, y2, shift = True))
+                if Extra:
+                    for _ in range(3):
+                        cropped_img.append(random_shift(img, x1, y1, x2, y2, shift = True))
 
+                i += 1
                # Save the cropped rectangle
-                for i, cropped_img_i in enumerate(cropped_img):
-                    if cropped_img_i is not None and not cropped_img_i.size == 0:
+                for cropped_img_i in cropped_img:
+                    
+                    if cropped_img_i is not None:
                         # Define the output file name (you can modify this as needed)
                         output_filename = f"{class_title}_{image_filename}_crop{i}.png"
+
+                        print(output_filename)
 
                         # Save the cropped rectangle
                         if not cv2.imwrite(os.path.join(output_dir, output_filename), cropped_img_i):
                             print(f"Failed to save image: {output_filename}")
+
+                        count += 1
 
 
         progress_bar.update(1)
 
     progress_bar.close()
 
+    print(f"Saved {count} images to {output_path}")
 
 # Example usage:
-save_slices_from_ann("Hog/YOLO_Dataset_All/labels/train", "Hog/YOLO_Dataset_All/images/train", "Hog/Slices_2")
+save_slices_from_ann("Hog/YOLO_Dataset_All/labels/test", "Hog/YOLO_Dataset_All/images/test", "Hog/Slices_Fortest")

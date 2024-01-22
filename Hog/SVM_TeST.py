@@ -141,7 +141,7 @@ def ReadAnnotationFile(img, image_name, Testpath_labels):
     return Cones 
 
 # Test Logic
-def test_logic(Testpath_images = "Hog/Slices_test/", Testpath_labels = "Hog/Test/label/"):
+def test_logic(Testpath_images = "Hog/Slices_Fortest/", Testpath_labels = "Hog/Test/label/"):
     # Load the SVM model
     clf = initialize_SVM_model(modelpath="Hog/SVM_HOG_Model.pkl")
     
