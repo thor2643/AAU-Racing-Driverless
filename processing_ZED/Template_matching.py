@@ -116,8 +116,8 @@ def find_blue(processed_img):
     hsv = cv2.cvtColor(processed_img, cv2.COLOR_BGR2HSV)
 
     # Define range of blue color in HSV 
-    lower_blue = np.array([100, 100, 100])
-    upper_blue = np.array([130, 255, 255])
+    lower_blue = np.array([120, 70,70]) #[100, 100, 100])
+    upper_blue = np.array([150, 240, 240]) #[130, 255, 255])
     
     # Threshold the HSV image to get only blue colors
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
@@ -195,9 +195,9 @@ def template_matching(frame, templates):
    
     for i, template in enumerate(templates):
         if i >= 9:
-            threshold = 0.65
+            threshold = 0.65 #0.65
         else:
-            threshold = 0.6
+            threshold = 0.6 #0.6
         if i == len(templates)/2:
             c = 1
             new_cone = True
@@ -237,30 +237,8 @@ def template_matching(frame, templates):
                     
     return frame, filtered_cones, width_height 
 
-"""
-        #Sorting out the cones that are too close to each other
-        for pt in zip(*loc[::-1]):
-            if cone_number[c] != 0:
-                #the following part sorts the found cones out, so that only one cone is found in each location
-                for u in range(cone_number[c]):
-                    distance = np.sqrt((pt[0] - filtered_cones[c][u][0]) ** 2 + (pt[1] - filtered_cones[c][u][1]) ** 2)
-                    if distance > allowed_distance:
-                        new_cone = True
-                    else:
-                        new_cone = False
-                        break #it stops looking   
-                     
-            if new_cone == True:
-                cone_number[c] += 1
-                filtered_cones[c].append(pt)
-                width_height[c].append([w, h])
-                
-    return frame, filtered_cones, width_height
-                
-"""  
-        
-        
 
+        
 
 #intersection over union
 def compute_iou(old_cone_coordinates, old_width_height, cone_coordinates, width_height):
@@ -533,7 +511,7 @@ Object_tracking = False
 
 def load(Object_tracking):
     #load video from folder:
-    video_folder = "Data_AccelerationTrack//1//Color.avi"            #"processing_ZED//ZED_color_video_Run_1.avi"
+    video_folder = "processing_ZED//ZED_color_video_Run_1.avi"                 #"processing_ZED//ZED_color_video_Run_1.avi", "Data_AccelerationTrack//1//Color.avi" 
     cap = cv2.VideoCapture(video_folder)
     L_s_mean, L_s_std, A_s_mean, A_s_std, B_s_mean, B_s_std = finds_LAB_reference_from_folder("processing_ZED//vores")
     frame_number = 0
@@ -562,12 +540,10 @@ def load(Object_tracking):
             
             #draw_cones(frame, old_cone_coordinates, old_width_height, y, Object_tracking)
         else:
-            frame_copy = frame.copy()
-            draw_cones(frame_copy, cone_coordinates, width_height, Object_tracking)
+            draw_cones(frame, cone_coordinates, width_height, Object_tracking)
 
         #show the frames:
         cv2.imshow("Video", frame)
-        cv2.imshow("Video_copy", frame_copy)
         t2 = time.time()
 
         # Press 'q' to exit the loop
@@ -578,3 +554,4 @@ def load(Object_tracking):
     cv2.destroyAllWindows()
     
 load(Object_tracking)
+
