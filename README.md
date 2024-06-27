@@ -1,5 +1,5 @@
 # AAU-Racing-Driverless P4-Project
-<a href="#sec_contributors"><img src="https://img.shields.io/badge/Authors-Group_364-blue.svg"></a> ![]
+<a href="#sec_contributors"><img src="https://img.shields.io/badge/Authors-Group_364-blue.svg"></a>
 
 The AAU Racing team, mainly consisting of energy and mechanical engineers, proposed a project to the
 Robotics department of Aalborg University which was to establish a foundation that will enable them to
@@ -13,7 +13,7 @@ As the AAU Racing team, as of this writing, yet have to build their electric rac
 
 
 ## Software Overview
-(https://img.shields.io/badge/C++-11-brightgreen.svg) [![python](https://img.shields.io/badge/Python-3.9-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org) ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white) ![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white)
+![](https://img.shields.io/badge/C++-11-brightgreen.svg) [![python](https://img.shields.io/badge/Python-3.9-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org) ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white) ![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white)
 
 Three approaches for detecting the cones were investigated. First traditional computer vision techniques, such as thresholding, edge detection and template matching, were set up and tested. It was quickly found that this approach was not robust enough to change in environment. Also it was not fast enough for a real-time solution. Secondly the HOG algorithm was tested together with an SVM classifier. Beside being very slow the HOG algorithm that was tested could not handle changes in cone sizes i.e. cones at different distances. This HOG/SVM code can be found in Alternatives folder. Lastly the YOLOv5 algorithm was tested and gave very promising results after initially being trained on a small dataset. After training the algorithm on the big [Fsoco-Dataset](https://www.fsoco-dataset.com/) created by the Formula Student community, the tests gave results of upwards 95% precision for finding the primary cones (yellow and blue). To run efficiently on the Jetson Nano the trained YOLOv5 model was converted to a TensorRT engine using the code by [mailrocketsystems](https://github.com/mailrocketsystems/JetsonYolov5).
 
